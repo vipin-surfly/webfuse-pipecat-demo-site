@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acme Insurance — Get a quote</title>
+  <style>
+    body {
+      margin: 0; min-height: 100vh; background: #f4f6fa; color: #1c2333;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    header {
+      background: #1c2333; color: #fff; padding: 1rem 2rem;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    header .logo { width: 28px; height: 28px; border-radius: 6px;
+                   background: #4da3ff; display: grid; place-items: center;
+                   font-weight: 700; }
+    main { max-width: 26rem; margin: 3rem auto; padding: 0 1.2rem; }
+    h1 { font-size: 1.3rem; margin: 0 0 .2rem; }
+    p.sub { color: #5a6478; margin: 0 0 2rem; }
+    form { display: grid; gap: 1.1rem; }
+    label { display: grid; gap: .35rem; font-weight: 600; font-size: .9rem; }
+    input, select {
+      font: inherit; padding: .65rem .8rem; border: 1px solid #c9d2e0;
+      border-radius: 8px; background: #fff;
+    }
+    button.primary {
+      font: inherit; font-weight: 600; padding: .75rem; border: 0;
+      border-radius: 8px; background: #2463eb; color: #fff; cursor: pointer;
+    }
+    button.primary:hover { background: #1d55d4; }
+    #success {
+      display: none; margin-top: 1.4rem; padding: .9rem 1.1rem;
+      background: #e8f8ee; border: 1px solid #b7e4c7; color: #14532d;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header><div class="logo">A</div> Acme Insurance</header>
+  <main>
+    <h1>Get your quote</h1>
+    <p class="sub">Two minutes, no paperwork. Or just ask the voice agent to fill this for you.</p>
+    <form id="quote-form">
+      <label>Full name
+        <input id="fullname" name="fullname" autocomplete="name" placeholder="Jane Doe">
+      </label>
+      <label>Email
+        <input id="email" name="email" type="email" autocomplete="email" placeholder="jane@example.com">
+      </label>
+      <label>Plan
+        <select id="plan" name="plan">
+          <option value="">Choose a plan…</option>
+          <option value="basic">Basic — $19/mo</option>
+          <option value="standard">Standard — $39/mo</option>
+          <option value="premium">Premium — $79/mo</option>
+        </select>
+      </label>
+      <button class="primary" id="submit-btn" type="submit">Get my quote</button>
+    </form>
+    <div id="success">Thanks! Your quote is on its way to your inbox.</div>
+  </main>
+
+  <!-- The voice agent: one <script> tag, like any analytics or chat widget. -->
+  <script src="agent.js"></script>
+</body>
+</html>
