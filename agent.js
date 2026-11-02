@@ -81,6 +81,7 @@
     setStatus("Connecting…");
     const ws = new WebSocket(BOT_WS);
     ws.binaryType = "arraybuffer";
+    console.log("[agent] connecting to", BOT_WS);
 
     // mic -> bot
     sender.port.onmessage = (e) => {
@@ -90,6 +91,7 @@
     // bot -> speaker / page
     ws.onmessage = (e) => {
       if (typeof e.data === "string") {
+        console.log("[agent] control message from bot:", e.data);
         const message = JSON.parse(e.data);
         if (message.type === "start_session") enterSession();
       } else {
@@ -97,18 +99,21 @@
       }
     };
 
-    ws.onopen = () => setStatus("Connected — just talk", true);
-    ws.onclose = () => setStatus("Disconnected — reload the page to reconnect");
-    ws.onerror = () => setStatus("Connection error — is the agent online?");
+    ws.onopen = () => { console.log("[agent] ws open"); setStatus("Connected — just talk", true); };
+    ws.onclose = (e) => { console.log("[agent] ws closed", e.code, e.reason); setStatus("Disconnected — reload the page to reconnect"); };
+    ws.onerror = () => { console.log("[agent] ws error"); setStatus("Connection error — is the agent online?"); };
   }
 
   // The agent asked for hands: move this tab into the Webfuse session
   // showing the same page. (The session's start page = this exact URL.)
   function enterSession() {
+    console.log("[agent] enterSession() called");
     setStatus("Opening a secure session…");
     const url = new URL(location.href);
     url.searchParams.set("via", "webfuse");
-    location.href = SPACE_LINK + "?url=" + encodeURIComponent(url.toString());
+    const target = SPACE_LINK + "?url=" + encodeURIComponent(url.toString());
+    console.log("[agent] navigating to", target);
+    location.href = target;
   }
 
   // Demo form behaviour: no backend, just a friendly success message.
