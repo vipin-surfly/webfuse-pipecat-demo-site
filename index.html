@@ -26,16 +26,6 @@ webfuse.initSpace(
     '3879',
     { session_autorestore_enabled: true },
 ).then(space => {
-        webfuse.on('session_started', function(session) {
-                // Open a tab when the session starts
-                session.openTab(window.location.href);
-                // Activate the new tab
-                session.getTabs().then(function(tabs) {
-                    if (tabs.length > 0) {
-                        session.activateTab(tabs[tabs.length - 1].id);
-                    }
-                });
-        });
         space.button({ position: 'bottomleft' });
     })
     .catch(error => {
@@ -101,6 +91,6 @@ webfuse.initSpace(
   </main>
 
   <!-- The voice agent: one <script> tag, like any analytics or chat widget. -->
-  <script src="agent.js?v=4"></script>
+  <script src="agent.js?v=5"></script>
 </body>
 </html>
