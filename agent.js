@@ -13,6 +13,20 @@
   // The voice websocket, hoisted so enterSession can use it.
   let ws = null;
 
+  // Bind the bot to ANY session that starts on this page — the one the
+  // agent triggers, one started with the support button, or one restored
+  // after the widget's cookie-transfer page reload.
+  function bindSession(s) {
+    const sid = s?.sessionId ?? s?._sessionId ?? s?.id;
+    console.log("[agent] session_started:", sid, s);
+    if (sid && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "bind", session_id: sid }));
+    }
+  }
+  if (typeof webfuse !== "undefined" && typeof webfuse.on === "function") {
+    webfuse.on("session_started", bindSession);
+  }
+
   // Inside the Webfuse session (cloud browser) the mic cannot work — the
   // session's own top bar carries the voice button (via the Webfuse
   // extension). Hide this page's widget and point the customer there.
@@ -63,6 +77,16 @@
     // One AudioContext at 16 kHz: mic resampled on capture; bot audio
     // (Int16 PCM @16 kHz) plays back natively — no resampling.
     const ctx = new AudioContext({ sampleRate: 16000 });
+
+    // After an auto-reconnect (page reload), browsers keep the AudioContext
+    // suspended until the next user interaction — the agent's voice would be
+    // inaudible. Resume it on the first click or keypress.
+    if (ctx.state === "suspended") {
+      setStatus("Tap anywhere to re-enable the agent's voice");
+      const resume = () => ctx.resume().catch(() => {});
+      document.addEventListener("click", resume, { once: true });
+      document.addEventListener("keydown", resume, { once: true });
+    }
 
     setStatus("Requesting microphone…");
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -122,17 +146,28 @@
       location.href = SPACE_LINK + "?url=" + encodeURIComponent(url.toString());
       return;
     }
-    const session = webfuse.session({});
-    session.on("session_started", (s) => {
-      const sid = s?.sessionId ?? s?._sessionId ?? s?.id;
-      console.log("[agent] session_started:", sid, s);
-      if (sid && ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "bind", session_id: sid }));
-      }
-    });
+    const session = webfuse.session({ cookie_transfer_enabled: false });
+    session.on("session_started", bindSession);
     session.startLeader();
     console.log("[agent] webfuse session startLeader() called");
   }
+
+  // The Webfuse widget may reload the page once when a session starts
+  // (cookie transfer). If the mic permission is already granted, reconnect
+  // automatically so the voice agent survives the reload.
+  function maybeAutoReconnect() {
+    if (!navigator.permissions?.query) return;
+    navigator.permissions
+      .query({ name: "microphone" })
+      .then((p) => {
+        if (p.state === "granted") {
+          console.log("[agent] mic permission granted — auto-connecting");
+          button.click();
+        }
+      })
+      .catch(() => {});
+  }
+  maybeAutoReconnect();
 
   // Demo form behaviour: no backend, just a friendly success message.
   document.getElementById("quote-form").addEventListener("submit", (e) => {
