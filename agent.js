@@ -6,7 +6,7 @@
  * showing THIS SAME page.
  */
 (() => {
-  console.log("[agent] voice widget v10 loaded");
+  console.log("[agent] voice widget v11 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -62,12 +62,12 @@
     "padding:.45rem .7rem;border-radius:8px;font:500 .78rem system-ui;" +
     "border:1px solid #dbe3ee;display:none;max-width:16rem;z-index:2147483647";
   document.body.append(status, button);
-  setStatus("Voice widget v10 — tap 🎙 to talk");
 
   const setStatus = (text, live = false) => {
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
+  setStatus("Voice widget v11 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
