@@ -6,7 +6,15 @@
  * showing THIS SAME page.
  */
 (() => {
-  console.log("[agent] voice widget v15 loaded");
+  // Inside a Webfuse session this page is the PROXIED copy shown in the
+  // session — the customer's live voice connection is on the outer page.
+  // Don't run a second voice widget here (it would double-connect, load
+  // worklets through the proxy, and confuse the mic).
+  if (window.__surfly || location.hostname.endsWith(".webfu.se")) {
+    console.log("[agent] inside a Webfuse session — voice widget stays on the outer page");
+    return;
+  }
+  console.log("[agent] voice widget v16 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -43,20 +51,6 @@
     });
   }
 
-  // Inside the Webfuse session (cloud browser) the mic cannot work — the
-  // session's own top bar carries the voice button (via the Webfuse
-  // extension). Hide this page's widget and point the customer there.
-  if (new URLSearchParams(location.search).get("via") === "webfuse") {
-    const hint = document.createElement("div");
-    hint.textContent = "🎙 Your voice agent is in the session top bar";
-    hint.style.cssText =
-      "position:fixed;right:16px;bottom:16px;background:#1c2333;color:#fff;" +
-      "padding:.6rem .9rem;border-radius:999px;font:600 .8rem system-ui;" +
-      "box-shadow:0 4px 14px rgba(0,0,0,.25)";
-    document.body.appendChild(hint);
-    return;
-  }
-
   // ---- the site's own voice widget --------------------------------------
   const button = document.createElement("button");
   button.textContent = "🎙";
@@ -79,7 +73,7 @@
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
-  setStatus("Voice widget v15 — tap 🎙 to talk");
+  setStatus("Voice widget v16 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
