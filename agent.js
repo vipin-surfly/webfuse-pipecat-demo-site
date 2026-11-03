@@ -6,7 +6,7 @@
  * showing THIS SAME page.
  */
 (() => {
-  console.log("[agent] voice widget v13 loaded");
+  console.log("[agent] voice widget v14 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -33,6 +33,12 @@
   }
   if (typeof webfuse !== "undefined" && typeof webfuse.on === "function") {
     webfuse.on("session_started", bindSession);
+    // Surface the widget's own error events (e.g. "refused to start")
+    // instead of failing silently.
+    webfuse.on("error", (e) => {
+      console.error("[agent] webfuse session error:", e);
+      setStatus("Session error: " + (e?.details || e?.reason || "unknown"));
+    });
   }
 
   // Inside the Webfuse session (cloud browser) the mic cannot work — the
@@ -71,7 +77,7 @@
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
-  setStatus("Voice widget v13 — tap 🎙 to talk");
+  setStatus("Voice widget v14 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
@@ -230,11 +236,16 @@
   }
 
   // If nothing happens after a few seconds, say so instead of failing
-  // silently.
+  // silently — and report whether the widget's dialog made it into the DOM.
   function scheduleStartTimeout() {
     setTimeout(() => {
-      if (!sessionStarted)
-        setStatus("Session did not start — open the console (F12) for errors");
+      if (sessionStarted) return;
+      const modal = document.querySelector(".surfly-modal");
+      setStatus(
+        modal
+          ? "The session dialog is open but hidden — check the console (F12)"
+          : "Session did not start — check the console (F12) for errors"
+      );
     }, 8000);
   }
 
