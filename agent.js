@@ -6,7 +6,7 @@
  * showing THIS SAME page.
  */
 (() => {
-  console.log("[agent] voice widget v11 loaded");
+  console.log("[agent] voice widget v12 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -67,7 +67,7 @@
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
-  setStatus("Voice widget v11 — tap 🎙 to talk");
+  setStatus("Voice widget v12 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
@@ -200,9 +200,15 @@
   function enterSession() {
     console.log("[agent] enterSession() called");
     setStatus("Opening a secure session…");
-    if (typeof webfuse === "undefined" || typeof webfuse.session !== "function") {
-      // Widget not loaded — fall back to navigating into the session.
-      console.log("[agent] webfuse widget not loaded, falling back to navigation");
+    // Only the Space object (resolved from webfuse.initSpace(...)) has
+    // .session() — the webfuse global itself only has initSpace. index.html
+    // exposes it as window.__wfSpace.
+    const space = window.__wfSpace;
+    if (!space || typeof space.session !== "function") {
+      // Widget not ready — fall back to navigating into the session.
+      console.log(
+        "[agent] webfuse Space not available yet, falling back to navigation"
+      );
       const url = new URL(location.href);
       url.searchParams.set("via", "webfuse");
       location.href = SPACE_LINK + "?url=" + encodeURIComponent(url.toString());
@@ -215,7 +221,7 @@
     // embedded_sessions_only forbids the navigate-the-page fallback: the
     // session either embeds here or fails in-page — our voice connection
     // never dies.
-    const session = webfuse.session({
+    const session = space.session({
       session_start_confirmation: true,
       embedded_sessions_only: true,
     });

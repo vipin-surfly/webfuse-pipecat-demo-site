@@ -33,6 +33,9 @@ webfuse.initSpace(
         session_start_confirmation: true
     },
 ).then(space => {
+        // Expose the Space object for the voice widget: only the Space has
+        // .session() — the webfuse global itself only has initSpace.
+        window.__wfSpace = space;
         space.button({ position: 'bottomleft' });
     })
     .catch(error => {
@@ -98,6 +101,6 @@ webfuse.initSpace(
   </main>
 
   <!-- The voice agent: one <script> tag, like any analytics or chat widget. -->
-  <script src="agent.js?v=11"></script>
+  <script src="agent.js?v=12"></script>
 </body>
 </html>
