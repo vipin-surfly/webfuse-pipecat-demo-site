@@ -100,6 +100,15 @@ webfuse.initSpace(
   </main>
 
   <!-- The voice agent: one <script> tag, like any analytics or chat widget. -->
-  <script src="agent.js?v=16"></script>
+  <!-- Where the Webfuse co-browsing session mounts when the agent asks for
+       hands: session.start('#agent-session-frame') embeds the session right
+       here. Hidden until it starts; sits just under the floating mic. -->
+  <iframe id="agent-session-frame"
+          allow="microphone https://webfu.se; camera https://webfu.se"
+          style="position:fixed;inset:0;width:100%;height:100%;border:0;
+                 z-index:2147483546;display:none"
+          title="Secure session"></iframe>
+
+  <script src="agent.js?v=17"></script>
 </body>
 </html>

@@ -10,11 +10,15 @@
   // session — the customer's live voice connection is on the outer page.
   // Don't run a second voice widget here (it would double-connect, load
   // worklets through the proxy, and confuse the mic).
-  if (window.__surfly || location.hostname.endsWith(".webfu.se")) {
+  if (
+    (window.webfuse && webfuse.isInsideSession) ||
+    window.__surfly ||
+    location.hostname.endsWith(".webfu.se")
+  ) {
     console.log("[agent] inside a Webfuse session — voice widget stays on the outer page");
     return;
   }
-  console.log("[agent] voice widget v16 loaded");
+  console.log("[agent] voice widget v17 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -34,8 +38,6 @@
     const sid = s?.sessionId ?? s?._sessionId ?? s?.id;
     console.log("[agent] session_started:", sid, s);
     sessionStarted = true;
-    const btn = document.querySelector(".surfly-button");
-    if (btn) btn.style.animation = "";
     setStatus("Secure session started — the agent is now on the page with you");
     if (sid && ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "bind", session_id: sid }));
@@ -73,7 +75,7 @@
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
-  setStatus("Voice widget v16 — tap 🎙 to talk");
+  setStatus("Voice widget v17 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
@@ -198,24 +200,40 @@
     ws.onerror = () => { console.log("[agent] ws error"); setStatus("Connection error — is the agent online?"); };
   }
 
-  // The agent asked for hands: reveal the widget's own "Get Live Help"
-  // button and let the CUSTOMER tap it. A real click is a real user gesture,
-  // so the widget runs its normal, proven path (cookie trick → session
-  // embeds as an overlay on this page). No programmatic clicking, no custom
-  // settings — the same thing as a customer tapping the button themselves.
-  // When the session starts, the global session_started handler (bindSession)
-  // tells the bot which session to drive.
+  // The agent asked for hands: start the Webfuse session programmatically
+  // — the documented widget-API way — and embed it into OUR iframe on this
+  // page (session.start('#agent-session-frame')). With a selector the
+  // widget never navigates the page away or opens separate tabs; it also
+  // bypasses the "restored session" start refusal. On browsers without
+  // third-party cookies the widget shows its own "Start session" dialog —
+  // the customer's click there supplies the user gesture — then the
+  // session embeds here. The global session_started handler binds the bot.
   function enterSession() {
     console.log("[agent] enterSession() called");
-    const btn = document.querySelector(".surfly-button");
-    if (!btn) {
-      setStatus("Session button not found — reload the page");
+    const space = window.__wfSpace;
+    const frame = document.getElementById("agent-session-frame");
+    if (!space || typeof space.session !== "function" || !frame) {
+      setStatus("Session frame not ready — reload the page");
       return;
     }
-    // Unhide and highlight the widget's button.
-    btn.classList.remove("surfly-button-hidden");
-    btn.style.animation = "agentPulse 1.4s ease-in-out infinite";
-    setStatus("👉 Tap the “Get Live Help” button (bottom left) to let the agent fill the form for you", true);
+    setStatus("A “Start session” dialog will pop up — please click Accept", true);
+    const session = space.session();
+    session.on("session_started", () => {
+      frame.style.display = "block";
+    });
+    try {
+      const p = session.start("#agent-session-frame");
+      if (p && typeof p.catch === "function") {
+        p.catch((err) => {
+          console.error("[agent] session.start failed:", err);
+          setStatus("Could not start the session: " + (err?.message || err));
+        });
+      }
+      console.log("[agent] session.start('#agent-session-frame') called");
+    } catch (err) {
+      console.error("[agent] session.start threw:", err);
+      setStatus("Could not start the session: " + err.message);
+    }
   }
 
   // The Webfuse widget may reload the page once when a session starts
