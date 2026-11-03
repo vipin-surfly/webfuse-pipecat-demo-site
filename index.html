@@ -24,7 +24,14 @@
 webfuse.initSpace(
     'wk_5ogniHUIu5Z0j_SXhfsByCavekz_PeCv',
     '3879',
-    { session_autorestore_enabled: true },
+    {
+        session_autorestore_enabled: true,
+        // Route session starts through the consent dialog: the customer's
+        // click refreshes the browser's user gesture (keeps the voice alive)
+        // and lets the widget run its cookie trick so the session EMBEDS in
+        // this page instead of navigating it away.
+        session_start_confirmation: true
+    },
 ).then(space => {
         space.button({ position: 'bottomleft' });
     })
@@ -91,6 +98,6 @@ webfuse.initSpace(
   </main>
 
   <!-- The voice agent: one <script> tag, like any analytics or chat widget. -->
-  <script src="agent.js?v=8"></script>
+  <script src="agent.js?v=9"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@
  * showing THIS SAME page.
  */
 (() => {
+  console.log("[agent] voice widget v9 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
