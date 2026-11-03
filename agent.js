@@ -18,7 +18,7 @@
     console.log("[agent] inside a Webfuse session — voice widget stays on the outer page");
     return;
   }
-  console.log("[agent] voice widget v17 loaded");
+  console.log("[agent] voice widget v18 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -71,11 +71,32 @@
     "border:1px solid #dbe3ee;display:none;max-width:16rem;z-index:2147483647";
   document.body.append(status, button);
 
+  // Mic mute: a pill button next to the mic. While muted, the customer's
+  // audio is not sent to the agent (they hear silence); the voice connection
+  // itself stays open.
+  let muted = false;
+  const muteBtn = document.createElement("button");
+  muteBtn.textContent = "Mute";
+  muteBtn.title = "Mute your microphone";
+  muteBtn.style.cssText =
+    "position:fixed;right:84px;bottom:32px;height:32px;padding:0 .9rem;" +
+    "border-radius:999px;border:1px solid #dbe3ee;background:#fff;color:#1c2333;" +
+    "font:600 .78rem system-ui;cursor:pointer;z-index:2147483647;display:none";
+  document.body.append(muteBtn);
+  muteBtn.addEventListener("click", () => {
+    muted = !muted;
+    muteBtn.textContent = muted ? "Unmute" : "Mute";
+    muteBtn.style.background = muted ? "#ef4444" : "#fff";
+    muteBtn.style.color = muted ? "#fff" : "#1c2333";
+    muteBtn.title = muted ? "Unmute your microphone" : "Mute your microphone";
+    setStatus(muted ? "You are muted — the agent cannot hear you" : "Mic live — just talk", true);
+  });
+
   const setStatus = (text, live = false) => {
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
-  setStatus("Voice widget v17 — tap 🎙 to talk");
+  setStatus("Voice widget v18 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
@@ -175,9 +196,9 @@
     ws.binaryType = "arraybuffer";
     console.log("[agent] connecting to", BOT_WS);
 
-    // mic -> bot
+    // mic -> bot (dropped while muted)
     sender.port.onmessage = (e) => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(e.data);
+      if (ws.readyState === WebSocket.OPEN && !muted) ws.send(e.data);
     };
 
     // bot -> speaker / page
@@ -194,9 +215,10 @@
     ws.onopen = () => {
       console.log("[agent] ws open");
       button.disabled = false;
+      muteBtn.style.display = "block";
       if (resumeAudio) paintMuted(); else paintLive();
     };
-    ws.onclose = (e) => { console.log("[agent] ws closed", e.code, e.reason); setStatus("Disconnected — reload the page to reconnect"); };
+    ws.onclose = (e) => { console.log("[agent] ws closed", e.code, e.reason); muteBtn.style.display = "none"; setStatus("Disconnected — reload the page to reconnect"); };
     ws.onerror = () => { console.log("[agent] ws error"); setStatus("Connection error — is the agent online?"); };
   }
 
