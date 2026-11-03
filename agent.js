@@ -206,7 +206,11 @@
       location.href = SPACE_LINK + "?url=" + encodeURIComponent(url.toString());
       return;
     }
-    const session = webfuse.session({ cookie_transfer_enabled: false });
+    // session_start_confirmation routes the start through a consent dialog:
+    // the click refreshes the browser's user gesture (keeping our audio
+    // alive) and lets the widget run its third-party-cookie trick, so the
+    // session embeds in this page instead of navigating it away.
+    const session = webfuse.session({ session_start_confirmation: true });
     session.on("session_started", bindSession);
     session.startLeader();
     console.log("[agent] webfuse session startLeader() called");
