@@ -8,8 +8,10 @@
 (() => {
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
-  // The Webfuse Space whose session the agent drives.
+  // Fallback: the Webfuse Space link (used if the widget didn't load).
   const SPACE_LINK = "https://webfu.se/+pipecat-poc/";
+  // The voice websocket, hoisted so enterSession can use it.
+  let ws = null;
 
   // Inside the Webfuse session (cloud browser) the mic cannot work — the
   // session's own top bar carries the voice button (via the Webfuse
@@ -79,7 +81,7 @@
     receiver.connect(ctx.destination);
 
     setStatus("Connecting…");
-    const ws = new WebSocket(BOT_WS);
+    ws = new WebSocket(BOT_WS);
     ws.binaryType = "arraybuffer";
     console.log("[agent] connecting to", BOT_WS);
 
@@ -104,16 +106,32 @@
     ws.onerror = () => { console.log("[agent] ws error"); setStatus("Connection error — is the agent online?"); };
   }
 
-  // The agent asked for hands: move this tab into the Webfuse session
-  // showing the same page. (The session's start page = this exact URL.)
+  // The agent asked for hands: open a Webfuse co-browsing session on this
+  // page. The session appears as an overlay on the same page — the mic
+  // connection keeps running. When it starts, tell the bot which session to
+  // drive (bind message), so its browser tools act on the page the customer
+  // is watching.
   function enterSession() {
     console.log("[agent] enterSession() called");
     setStatus("Opening a secure session…");
-    const url = new URL(location.href);
-    url.searchParams.set("via", "webfuse");
-    const target = SPACE_LINK + "?url=" + encodeURIComponent(url.toString());
-    console.log("[agent] navigating to", target);
-    location.href = target;
+    if (typeof webfuse === "undefined" || typeof webfuse.session !== "function") {
+      // Widget not loaded — fall back to navigating into the session.
+      console.log("[agent] webfuse widget not loaded, falling back to navigation");
+      const url = new URL(location.href);
+      url.searchParams.set("via", "webfuse");
+      location.href = SPACE_LINK + "?url=" + encodeURIComponent(url.toString());
+      return;
+    }
+    const session = webfuse.session({});
+    session.on("session_started", (s) => {
+      const sid = s?.sessionId ?? s?._sessionId ?? s?.id;
+      console.log("[agent] session_started:", sid, s);
+      if (sid && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "bind", session_id: sid }));
+      }
+    });
+    session.startLeader();
+    console.log("[agent] webfuse session startLeader() called");
   }
 
   // Demo form behaviour: no backend, just a friendly success message.
