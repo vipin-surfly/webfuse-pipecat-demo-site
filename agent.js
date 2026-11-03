@@ -6,7 +6,7 @@
  * showing THIS SAME page.
  */
 (() => {
-  console.log("[agent] voice widget v12 loaded");
+  console.log("[agent] voice widget v13 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -16,6 +16,8 @@
   // Set when the browser keeps the agent's voice suspended (after the page
   // reload when a session starts) — clicking the mic resumes it.
   let resumeAudio = null;
+  // Set when a Webfuse session has started on this page (bindSession).
+  let sessionStarted = false;
 
   // Bind the bot to ANY session that starts on this page — the one the
   // agent triggers, one started with the support button, or one restored
@@ -23,6 +25,8 @@
   function bindSession(s) {
     const sid = s?.sessionId ?? s?._sessionId ?? s?.id;
     console.log("[agent] session_started:", sid, s);
+    sessionStarted = true;
+    setStatus("Secure session started — the agent is now on the page with you");
     if (sid && ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "bind", session_id: sid }));
     }
@@ -67,7 +71,7 @@
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
-  setStatus("Voice widget v12 — tap 🎙 to talk");
+  setStatus("Voice widget v13 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
@@ -193,41 +197,45 @@
   }
 
   // The agent asked for hands: open a Webfuse co-browsing session on this
-  // page. The session appears as an overlay on the same page — the mic
-  // connection keeps running. When it starts, tell the bot which session to
-  // drive (bind message), so its browser tools act on the page the customer
-  // is watching.
+  // page, exactly the way the "Get Live Help" button does it — we click that
+  // same button. Same settings, same consent dialog, same cookie-trick and
+  // embed logic the widget already runs; nothing custom. When the session
+  // starts, the global session_started handler (bindSession) tells the bot
+  // which session to drive.
   function enterSession() {
     console.log("[agent] enterSession() called");
     setStatus("Opening a secure session…");
-    // Only the Space object (resolved from webfuse.initSpace(...)) has
-    // .session() — the webfuse global itself only has initSpace. index.html
-    // exposes it as window.__wfSpace.
-    const space = window.__wfSpace;
-    if (!space || typeof space.session !== "function") {
-      // Widget not ready — fall back to navigating into the session.
-      console.log(
-        "[agent] webfuse Space not available yet, falling back to navigation"
-      );
-      const url = new URL(location.href);
-      url.searchParams.set("via", "webfuse");
-      location.href = SPACE_LINK + "?url=" + encodeURIComponent(url.toString());
+    const clickButton = () => {
+      const btn = document.querySelector(".surfly-button");
+      if (!btn) return false;
+      console.log("[agent] clicking the webfuse support button");
+      btn.click();
+      return true;
+    };
+    if (clickButton()) {
+      scheduleStartTimeout();
       return;
     }
-    // session_start_confirmation routes the start through a consent dialog:
-    // the click refreshes the browser's user gesture (keeping our audio
-    // alive) and lets the widget run its third-party-cookie trick, so the
-    // session embeds in this page instead of navigating it away.
-    // embedded_sessions_only forbids the navigate-the-page fallback: the
-    // session either embeds here or fails in-page — our voice connection
-    // never dies.
-    const session = space.session({
-      session_start_confirmation: true,
-      embedded_sessions_only: true,
-    });
-    session.on("session_started", bindSession);
-    session.startLeader();
-    console.log("[agent] webfuse session startLeader() called");
+    // Button not in the DOM yet (widget still loading) — retry briefly.
+    let tries = 0;
+    const timer = setInterval(() => {
+      if (clickButton()) {
+        clearInterval(timer);
+        scheduleStartTimeout();
+      } else if (++tries > 10) {
+        clearInterval(timer);
+        setStatus("Could not find the session button — reload the page");
+      }
+    }, 500);
+  }
+
+  // If nothing happens after a few seconds, say so instead of failing
+  // silently.
+  function scheduleStartTimeout() {
+    setTimeout(() => {
+      if (!sessionStarted)
+        setStatus("Session did not start — open the console (F12) for errors");
+    }, 8000);
   }
 
   // The Webfuse widget may reload the page once when a session starts
