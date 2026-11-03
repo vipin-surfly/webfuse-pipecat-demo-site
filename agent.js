@@ -6,7 +6,7 @@
  * showing THIS SAME page.
  */
 (() => {
-  console.log("[agent] voice widget v9 loaded");
+  console.log("[agent] voice widget v10 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -62,6 +62,7 @@
     "padding:.45rem .7rem;border-radius:8px;font:500 .78rem system-ui;" +
     "border:1px solid #dbe3ee;display:none;max-width:16rem;z-index:2147483647";
   document.body.append(status, button);
+  setStatus("Voice widget v10 — tap 🎙 to talk");
 
   const setStatus = (text, live = false) => {
     status.style.display = "block";
@@ -211,7 +212,13 @@
     // the click refreshes the browser's user gesture (keeping our audio
     // alive) and lets the widget run its third-party-cookie trick, so the
     // session embeds in this page instead of navigating it away.
-    const session = webfuse.session({ session_start_confirmation: true });
+    // embedded_sessions_only forbids the navigate-the-page fallback: the
+    // session either embeds here or fails in-page — our voice connection
+    // never dies.
+    const session = webfuse.session({
+      session_start_confirmation: true,
+      embedded_sessions_only: true,
+    });
     session.on("session_started", bindSession);
     session.startLeader();
     console.log("[agent] webfuse session startLeader() called");
