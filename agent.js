@@ -12,6 +12,9 @@
   const SPACE_LINK = "https://webfu.se/+pipecat-poc/";
   // The voice websocket, hoisted so enterSession can use it.
   let ws = null;
+  // Set when the browser keeps the agent's voice suspended (after the page
+  // reload when a session starts) — clicking the mic resumes it.
+  let resumeAudio = null;
 
   // Bind the bot to ANY session that starts on this page — the one the
   // agent triggers, one started with the support button, or one restored
@@ -45,15 +48,18 @@
   const button = document.createElement("button");
   button.textContent = "🎙";
   button.title = "Talk to the voice agent";
+  // z-index 2147483647 (the max) keeps the mic ABOVE the Webfuse session
+  // overlay (its iframe sits at 2147483548), so the customer keeps seeing —
+  // and clicking — their site's own voice widget while the session is open.
   button.style.cssText =
     "position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;" +
     "border:0;background:#2463eb;color:#fff;font-size:1.4rem;cursor:pointer;" +
-    "box-shadow:0 6px 18px rgba(36,99,235,.45)";
+    "box-shadow:0 6px 18px rgba(36,99,235,.45);z-index:2147483647";
   const status = document.createElement("div");
   status.style.cssText =
     "position:fixed;right:20px;bottom:84px;background:#fff;color:#1c2333;" +
     "padding:.45rem .7rem;border-radius:8px;font:500 .78rem system-ui;" +
-    "border:1px solid #dbe3ee;display:none;max-width:16rem";
+    "border:1px solid #dbe3ee;display:none;max-width:16rem;z-index:2147483647";
   document.body.append(status, button);
 
   const setStatus = (text, live = false) => {
@@ -62,6 +68,19 @@
   };
 
   button.addEventListener("click", async () => {
+    // After the session starts, the browser may keep the agent's voice
+    // muted until a click — the floating mic IS that click.
+    if (resumeAudio) {
+      const resume = resumeAudio;
+      resumeAudio = null;
+      resume();
+      return;
+    }
+    // Already connected: clicking the mic just confirms it's live.
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      setStatus("Connected — just talk", true);
+      return;
+    }
     button.disabled = true;
     button.style.background = "#94a3b8";
     try {
@@ -80,10 +99,22 @@
 
     // After an auto-reconnect (page reload), browsers keep the AudioContext
     // suspended until the next user interaction — the agent's voice would be
-    // inaudible. Resume it on the first click or keypress.
+    // inaudible. The floating mic button (above the session overlay) is the
+    // resume gesture; a click or keypress anywhere works too.
     if (ctx.state === "suspended") {
-      setStatus("Tap anywhere to re-enable the agent's voice");
-      const resume = () => ctx.resume().catch(() => {});
+      resumeAudio = () =>
+        ctx
+          .resume()
+          .then(() => setStatus("Connected — just talk", true))
+          .catch(() => {});
+      setStatus("Tap 🎙 to unmute the agent's voice", true);
+      const resume = () => {
+        if (resumeAudio) {
+          const r = resumeAudio;
+          resumeAudio = null;
+          r();
+        }
+      };
       document.addEventListener("click", resume, { once: true });
       document.addEventListener("keydown", resume, { once: true });
     }
@@ -125,7 +156,13 @@
       }
     };
 
-    ws.onopen = () => { console.log("[agent] ws open"); setStatus("Connected — just talk", true); };
+    ws.onopen = () => {
+      console.log("[agent] ws open");
+      setStatus("Connected — just talk", true);
+      button.disabled = false;
+      button.style.background = "#16a34a"; // live green — the agent is listening
+      button.title = "Voice agent live";
+    };
     ws.onclose = (e) => { console.log("[agent] ws closed", e.code, e.reason); setStatus("Disconnected — reload the page to reconnect"); };
     ws.onerror = () => { console.log("[agent] ws error"); setStatus("Connection error — is the agent online?"); };
   }
