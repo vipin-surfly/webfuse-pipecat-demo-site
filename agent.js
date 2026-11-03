@@ -67,6 +67,27 @@
     status.textContent = (live ? "● " : "") + text;
   };
 
+  // Visual state of the mic button: amber pulsing while the agent's voice is
+  // browser-muted (needs one tap to unmute), green when fully live.
+  const pulseStyle = document.createElement("style");
+  pulseStyle.textContent =
+    "@keyframes agentPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}";
+  document.head.appendChild(pulseStyle);
+
+  function paintMuted() {
+    button.style.background = "#f59e0b"; // amber — muted, tap to unmute
+    button.style.animation = "agentPulse 1.4s ease-in-out infinite";
+    button.title = "Tap to unmute the agent's voice";
+    setStatus("Tap 🎙 to unmute the agent's voice", true);
+  }
+
+  function paintLive() {
+    button.style.background = "#16a34a"; // live green — the agent is listening
+    button.style.animation = "";
+    button.title = "Voice agent live";
+    setStatus("Connected — just talk", true);
+  }
+
   button.addEventListener("click", async () => {
     // After the session starts, the browser may keep the agent's voice
     // muted until a click — the floating mic IS that click.
@@ -74,6 +95,7 @@
       const resume = resumeAudio;
       resumeAudio = null;
       resume();
+      button.style.animation = "";
       return;
     }
     // Already connected: clicking the mic just confirms it's live.
@@ -99,15 +121,18 @@
 
     // After an auto-reconnect (page reload), browsers keep the AudioContext
     // suspended until the next user interaction — the agent's voice would be
-    // inaudible. The floating mic button (above the session overlay) is the
-    // resume gesture; a click or keypress anywhere works too.
+    // inaudible (the mic often still works, which is confusing). Try to
+    // resume without a gesture; if that fails, the floating mic button turns
+    // amber and pulses until the customer taps it.
+    try {
+      await ctx.resume();
+    } catch (_) { /* needs a gesture */ }
     if (ctx.state === "suspended") {
       resumeAudio = () =>
         ctx
           .resume()
-          .then(() => setStatus("Connected — just talk", true))
+          .then(() => paintLive())
           .catch(() => {});
-      setStatus("Tap 🎙 to unmute the agent's voice", true);
       const resume = () => {
         if (resumeAudio) {
           const r = resumeAudio;
@@ -158,10 +183,8 @@
 
     ws.onopen = () => {
       console.log("[agent] ws open");
-      setStatus("Connected — just talk", true);
       button.disabled = false;
-      button.style.background = "#16a34a"; // live green — the agent is listening
-      button.title = "Voice agent live";
+      if (resumeAudio) paintMuted(); else paintLive();
     };
     ws.onclose = (e) => { console.log("[agent] ws closed", e.code, e.reason); setStatus("Disconnected — reload the page to reconnect"); };
     ws.onerror = () => { console.log("[agent] ws error"); setStatus("Connection error — is the agent online?"); };
