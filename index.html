@@ -25,13 +25,11 @@ webfuse.initSpace(
     'wk_5ogniHUIu5Z0j_SXhfsByCavekz_PeCv',
     '3879',
     {
-        // Route session starts through the consent dialog: the customer's
-        // click refreshes the browser's user gesture (keeps the voice alive)
-        // and lets the widget run its cookie trick so the session EMBEDS in
-        // this page instead of navigating it away.
+        // No extra settings: the customer taps the "Get Live Help" button
+        // themselves — a real user gesture — so the widget runs its normal,
+        // proven start path (popup + cookie trick → session embeds here).
         // NOTE: do NOT enable session_autorestore_enabled — with stale
         // restore cookies the widget REFUSES to start new sessions.
-        session_start_confirmation: true
     },
 ).then(space => {
         // Expose the Space object for the voice widget: only the Space has
@@ -102,6 +100,6 @@ webfuse.initSpace(
   </main>
 
   <!-- The voice agent: one <script> tag, like any analytics or chat widget. -->
-  <script src="agent.js?v=14"></script>
+  <script src="agent.js?v=15"></script>
 </body>
 </html>

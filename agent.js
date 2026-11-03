@@ -6,7 +6,7 @@
  * showing THIS SAME page.
  */
 (() => {
-  console.log("[agent] voice widget v14 loaded");
+  console.log("[agent] voice widget v15 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -26,6 +26,8 @@
     const sid = s?.sessionId ?? s?._sessionId ?? s?.id;
     console.log("[agent] session_started:", sid, s);
     sessionStarted = true;
+    const btn = document.querySelector(".surfly-button");
+    if (btn) btn.style.animation = "";
     setStatus("Secure session started — the agent is now on the page with you");
     if (sid && ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "bind", session_id: sid }));
@@ -77,7 +79,7 @@
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
-  setStatus("Voice widget v14 — tap 🎙 to talk");
+  setStatus("Voice widget v15 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
@@ -202,51 +204,24 @@
     ws.onerror = () => { console.log("[agent] ws error"); setStatus("Connection error — is the agent online?"); };
   }
 
-  // The agent asked for hands: open a Webfuse co-browsing session on this
-  // page, exactly the way the "Get Live Help" button does it — we click that
-  // same button. Same settings, same consent dialog, same cookie-trick and
-  // embed logic the widget already runs; nothing custom. When the session
-  // starts, the global session_started handler (bindSession) tells the bot
-  // which session to drive.
+  // The agent asked for hands: reveal the widget's own "Get Live Help"
+  // button and let the CUSTOMER tap it. A real click is a real user gesture,
+  // so the widget runs its normal, proven path (cookie trick → session
+  // embeds as an overlay on this page). No programmatic clicking, no custom
+  // settings — the same thing as a customer tapping the button themselves.
+  // When the session starts, the global session_started handler (bindSession)
+  // tells the bot which session to drive.
   function enterSession() {
     console.log("[agent] enterSession() called");
-    setStatus("Opening a secure session…");
-    const clickButton = () => {
-      const btn = document.querySelector(".surfly-button");
-      if (!btn) return false;
-      console.log("[agent] clicking the webfuse support button");
-      btn.click();
-      return true;
-    };
-    if (clickButton()) {
-      scheduleStartTimeout();
+    const btn = document.querySelector(".surfly-button");
+    if (!btn) {
+      setStatus("Session button not found — reload the page");
       return;
     }
-    // Button not in the DOM yet (widget still loading) — retry briefly.
-    let tries = 0;
-    const timer = setInterval(() => {
-      if (clickButton()) {
-        clearInterval(timer);
-        scheduleStartTimeout();
-      } else if (++tries > 10) {
-        clearInterval(timer);
-        setStatus("Could not find the session button — reload the page");
-      }
-    }, 500);
-  }
-
-  // If nothing happens after a few seconds, say so instead of failing
-  // silently — and report whether the widget's dialog made it into the DOM.
-  function scheduleStartTimeout() {
-    setTimeout(() => {
-      if (sessionStarted) return;
-      const modal = document.querySelector(".surfly-modal");
-      setStatus(
-        modal
-          ? "The session dialog is open but hidden — check the console (F12)"
-          : "Session did not start — check the console (F12) for errors"
-      );
-    }, 8000);
+    // Unhide and highlight the widget's button.
+    btn.classList.remove("surfly-button-hidden");
+    btn.style.animation = "agentPulse 1.4s ease-in-out infinite";
+    setStatus("👉 Tap the “Get Live Help” button (bottom left) to let the agent fill the form for you", true);
   }
 
   // The Webfuse widget may reload the page once when a session starts
