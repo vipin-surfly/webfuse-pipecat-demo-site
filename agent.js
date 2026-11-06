@@ -18,7 +18,7 @@
     console.log("[agent] inside a Webfuse session — voice widget stays on the outer page");
     return;
   }
-  console.log("[agent] voice widget v19 loaded");
+  console.log("[agent] voice widget v20 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
   const BOT_WS = "wss://c606-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
@@ -43,15 +43,25 @@
       ws.send(JSON.stringify({ type: "bind", session_id: sid }));
     }
   }
-  if (typeof webfuse !== "undefined" && typeof webfuse.on === "function") {
-    webfuse.on("session_started", bindSession);
-    // Surface the widget's own error events (e.g. "refused to start")
-    // instead of failing silently.
-    webfuse.on("error", (e) => {
-      console.error("[agent] webfuse session error:", e);
-      setStatus("Session error: " + (e?.details || e?.reason || "unknown"));
-    });
+  // Register the global session_started handler. At page-parse time `webfuse`
+  // is only the async loader stub (no `.on` yet) — poll until the real
+  // widget API has replaced it, then attach. The primary bind now happens on
+  // the session object itself (enterSession); this global handler is a
+  // safety net for sessions started any other way (e.g. the support button).
+  function registerGlobalHandlers() {
+    if (typeof webfuse !== "undefined" && typeof webfuse.on === "function") {
+      webfuse.on("session_started", bindSession);
+      // Surface the widget's own error events (e.g. "refused to start")
+      // instead of failing silently.
+      webfuse.on("error", (e) => {
+        console.error("[agent] webfuse session error:", e);
+        setStatus("Session error: " + (e?.details || e?.reason || "unknown"));
+      });
+    } else {
+      setTimeout(registerGlobalHandlers, 500);
+    }
   }
+  registerGlobalHandlers();
 
   // ---- the site's own voice widget --------------------------------------
   const button = document.createElement("button");
@@ -96,7 +106,7 @@
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
-  setStatus("Voice widget v19 — tap 🎙 to talk");
+  setStatus("Voice widget v20 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
@@ -240,8 +250,11 @@
     }
     setStatus("A “Start session” dialog will pop up — please click Accept", true);
     const session = space.session();
-    session.on("session_started", () => {
+    // When the session starts: show the frame AND bind the bot to this
+    // session so its browser tools act on the page the customer sees.
+    session.on("session_started", (s) => {
       frame.style.display = "block";
+      bindSession(s);
     });
     try {
       const p = session.start("#agent-session-frame");
