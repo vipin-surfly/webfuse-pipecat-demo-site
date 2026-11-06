@@ -18,9 +18,9 @@
     console.log("[agent] inside a Webfuse session — voice widget stays on the outer page");
     return;
   }
-  console.log("[agent] voice widget v18 loaded");
+  console.log("[agent] voice widget v19 loaded");
   // Where the Pipecat bot's voice websocket is reachable (ngrok tunnel).
-  const BOT_WS = "wss://d3f1-95-97-8-146.ngrok-free.app";
+  const BOT_WS = "wss://c606-95-97-8-146.ngrok-free.app";
   // Fallback: the Webfuse Space link (used if the widget didn't load).
   const SPACE_LINK = "https://webfu.se/+pipecat-poc/";
   // The voice websocket, hoisted so enterSession can use it.
@@ -96,7 +96,7 @@
     status.style.display = "block";
     status.textContent = (live ? "● " : "") + text;
   };
-  setStatus("Voice widget v18 — tap 🎙 to talk");
+  setStatus("Voice widget v19 — tap 🎙 to talk");
 
   // Visual state of the mic button: amber pulsing while the agent's voice is
   // browser-muted (needs one tap to unmute), green when fully live.
