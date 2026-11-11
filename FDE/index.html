@@ -133,9 +133,11 @@ drive. No SDK on the page, no WebRTC, nothing to negotiate.</p>
 setsid nohup .venv/bin/python bot.py &gt; bot.log 2&gt;&amp;1 &lt; /dev/null &amp;
 </code></pre>
 <p>The voice websocket listens on <code>localhost:8765</code>.</p>
-<h3>2. Expose it over HTTPS</h3>
+<h3>2. Expose it over HTTPS (demo shortcut: ngrok)</h3>
 <p>The session runs in Webfuse's cloud, so the bot needs a public
-websocket URL:</p>
+websocket URL. For this demo we use ngrok — but that's only a POC
+convenience (see Notes): in production you'd host the bot with its own
+HTTPS endpoint and skip this step:</p>
 <pre><code class="language-bash">setsid nohup ngrok http 8765 --log stdout &gt; ngrok.log 2&gt;&amp;1 &lt; /dev/null &amp;
 curl -s http://127.0.0.1:4040/api/tunnels   # copy the wss:// URL
 </code></pre>
@@ -241,9 +243,14 @@ never navigating away. Same wire, same tools — the demo site at
 </table>
 <h2>Notes</h2>
 <ul>
-<li>The tunnel URL rotates on every ngrok restart — that's the one
-  manual step in this POC. Hosting the bot on any server with HTTPS
-  removes it entirely.</li>
+<li><strong>ngrok is demo-only.</strong> The free tunnel is just the quickest way to
+  get a public <code>wss://</code> URL on a laptop for this POC — its URL rotates
+  on every restart (the one manual step here) and it adds latency. In
+  a real deployment the bot runs <strong>hosted</strong> — any server or container
+  with an HTTPS certificate (your own infra, a VPS, a cloud run
+  service) — and the extension's <code>BOT_WS_URL</code> simply points at that
+  stable URL. Nothing else in the demo changes: same Pipecat pipeline,
+  same extension, same Space.</li>
 <li>The bot serves a local test page on <code>:8766</code> (<code>client/index.html</code>) for
   voice-only debugging without a session.</li>
 <li>The 14 session tools come from Webfuse's Session MCP
