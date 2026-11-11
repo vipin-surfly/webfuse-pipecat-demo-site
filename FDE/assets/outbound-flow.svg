@@ -1,0 +1,45 @@
+<svg viewBox="0 0 920 300" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Outbound flow: open the session link, the Voice Agent extension gives the session a voice">
+  <rect width="920" height="300" fill="#0f1626"/>
+  <text x="460" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#e8eefb">The outbound flow — no widget on the site, the session IS the product</text>
+
+  <!-- 1: the link -->
+  <rect x="40" y="70" width="250" height="150" rx="12" fill="#1c2333" stroke="#31405c"/>
+  <circle cx="62" cy="92" r="11" fill="#4da3ff"/><text x="62" y="96" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">1</text>
+  <text x="165" y="96" text-anchor="middle" font-size="12" fill="#cfe0ff" font-weight="700">Open the session link</text>
+  <rect x="60" y="112" width="210" height="34" rx="8" fill="#0f1626" stroke="#31405c"/>
+  <text x="165" y="134" text-anchor="middle" font-size="11" fill="#9fd0ff" font-family="monospace">webfu.se/+pipecat-poc/</text>
+  <text x="165" y="168" text-anchor="middle" font-size="10.5" fill="#8fa2c2">no site changes at all — support sends</text>
+  <text x="165" y="184" text-anchor="middle" font-size="10.5" fill="#8fa2c2">the customer one link (chat, email, phone)</text>
+  <text x="165" y="205" text-anchor="middle" font-size="10.5" fill="#8fa2c2">the session boots the Space's start page</text>
+
+  <line x1="290" y1="145" x2="330" y2="145" stroke="#4da3ff" stroke-width="2"/>
+
+  <!-- 2: session with extension -->
+  <rect x="330" y="70" width="270" height="150" rx="12" fill="#1c2333" stroke="#31405c"/>
+  <circle cx="352" cy="92" r="11" fill="#f59e0b"/><text x="352" y="96" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">2</text>
+  <text x="465" y="96" text-anchor="middle" font-size="12" fill="#cfe0ff" font-weight="700">The session, with a voice</text>
+  <rect x="350" y="112" width="230" height="88" rx="8" fill="#0f1626" stroke="#31405c"/>
+  <rect x="350" y="112" width="230" height="24" rx="8" fill="#31405c"/>
+  <text x="465" y="128" text-anchor="middle" font-size="10" fill="#cfe0ff">session top bar</text>
+  <circle cx="372" cy="124" r="8" fill="#2463eb"/><text x="372" y="128" text-anchor="middle" font-size="9">🎙</text>
+  <text x="390" y="127" font-size="9" fill="#9fd0ff">Voice Agent (extension)</text>
+  <rect x="366" y="150" width="198" height="12" rx="4" fill="#24406e"/>
+  <rect x="366" y="168" width="198" height="12" rx="4" fill="#24406e"/>
+  <rect x="366" y="150" width="120" height="12" rx="4" fill="#4da3ff"/>
+  <rect x="366" y="168" width="80" height="12" rx="4" fill="#4da3ff"/>
+
+  <line x1="600" y1="145" x2="640" y2="145" stroke="#4da3ff" stroke-width="2"/>
+
+  <!-- 3: talk + act -->
+  <rect x="640" y="70" width="250" height="150" rx="12" fill="#1c2333" stroke="#31405c"/>
+  <circle cx="662" cy="92" r="11" fill="#16a34a"/><text x="662" y="96" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">3</text>
+  <text x="765" y="96" text-anchor="middle" font-size="12" fill="#cfe0ff" font-weight="700">Talk — it acts</text>
+  <text x="765" y="124" text-anchor="middle" font-size="10.5" fill="#8fa2c2">mic click → popup connects to the bot,</text>
+  <text x="765" y="140" text-anchor="middle" font-size="10.5" fill="#8fa2c2">reads its session id, sends the bind —</text>
+  <text x="765" y="156" text-anchor="middle" font-size="10.5" fill="#8fa2c2">the same voice wire as the site widget</text>
+  <text x="765" y="182" text-anchor="middle" font-size="10.5" fill="#28c840">agent drives the very session you watch</text>
+
+  <rect x="40" y="242" width="850" height="40" rx="10" fill="#141c30" stroke="#31405c"/>
+  <text x="465" y="267" text-anchor="middle" font-size="11" fill="#8fa2c2">the "Voice Agent" extension is installed once on the Space — every session gets it in the top bar · its BOT_WS_URL must point at the live tunnel</text>
+</svg>

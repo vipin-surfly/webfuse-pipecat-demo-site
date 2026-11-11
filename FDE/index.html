@@ -43,6 +43,11 @@
                 color: #3b465c; }
   hr { border: 0; border-top: 1px solid #e8eef6; margin: 2.2rem 0; }
   a { color: #2463eb; }
+  article img {
+    max-width: 100%; height: auto; display: block; margin: 1.4rem 0;
+    border-radius: 10px; border: 1px solid #dbe3ee;
+    box-shadow: 0 8px 24px rgba(28,35,51,.10);
+  }
   .toc { background: #f0f4fa; border: 1px solid #dbe3ee; border-radius: 10px;
           padding: 1rem 1.4rem; margin-bottom: 2rem; }
   .toc ul { margin: .3rem 0; padding-left: 1.1rem; }
@@ -71,6 +76,7 @@ act (fill a form, click something), it opens a <strong>secure co-browsing
 session that shows the same page the customer is on</strong>, embedded as an
 overlay — and does the work on their behalf while they watch <strong>and keep
 talking</strong>. The voice connection never drops.</p>
+<p><img alt="The flow at a glance: you talk, a secure overlay opens on the same page, the form fills itself" src="assets/how-it-works.svg" /></p>
 <p>Try it live at <strong>https://webfuse-pipecat.netlify.app</strong>
 (primary; also mirrored at
 https://vipin-surfly.github.io/webfuse-pipecat-demo-site/ —
@@ -97,6 +103,7 @@ session link directly and get the voice agent <em>inside</em> the session
 (§4.4).</p>
 <hr />
 <h2 id="2-the-moving-parts">2. The moving parts</h2>
+<p><img alt="Architecture: the customer's browser, the voice websocket through the tunnel, the Pipecat bot, OpenAI Realtime, and the Webfuse Session MCP driving the embedded session" src="assets/architecture.svg" /></p>
 <pre><code>   Visitor's browser — https://vipin-surfly.github.io/webfuse-pipecat-demo-site/
    ├── index.html   Acme form + Webfuse widget snippet + session iframe
    │                (initSpace → window.__wfSpace; #agent-session-frame)
@@ -242,6 +249,7 @@ static, the sessions are in Webfuse's cloud, the model is OpenAI's.</p>
    connection stays open, the agent can keep acting on the page.</li>
 </ol>
 <h3 id="42-the-handoff-fill-the-form-for-me">4.2 The handoff ("fill the form for me")</h3>
+<p><img alt="The handoff sequence: speak, tool call, control frame, session embeds, bind, agent acts, done — voice never drops" src="assets/handoff-sequence.svg" /></p>
 <ol>
 <li>The LLM calls the <code>start_secure_session</code> tool. The tool sends
    <code>{"type":"start_session"}</code> down the voice WS <strong>first</strong>, then returns
@@ -271,6 +279,7 @@ loads <code>agent.js</code> — the guard (<code>webfuse.isInsideSession</code>,
 <code>*.webfu.se</code> host) makes it return immediately: one voice widget, on
 the outer page, not two.</p>
 <h3 id="44-the-outbound-flow-session-first-no-site-widget-needed">4.4 The outbound flow (session-first, no site widget needed)</h3>
+<p><img alt="Outbound flow: open the session link, the Voice Agent extension gives the session a voice, talk and the agent drives the session you watch" src="assets/outbound-flow.svg" /></p>
 <p>The Space also works in the reverse direction: a customer with
 <strong>no voice widget on their site at all</strong> opens a session link
 directly and gets the voice agent <em>inside</em> the session, via the

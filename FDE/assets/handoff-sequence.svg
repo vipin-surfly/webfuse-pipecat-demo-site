@@ -1,0 +1,77 @@
+<svg viewBox="0 0 920 330" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="The handoff sequence: seven steps from speaking to the filled form">
+  <rect width="920" height="330" fill="#0f1626"/>
+  <text x="460" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#e8eefb">The handoff — "fill the form for me" in seven steps</text>
+
+  <!-- seven numbered cards -->
+  <g font-family="system-ui, sans-serif">
+    <!-- 1 -->
+    <rect x="30" y="66" width="120" height="130" rx="10" fill="#1c2333" stroke="#31405c"/>
+    <circle cx="50" cy="86" r="11" fill="#4da3ff"/><text x="50" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">1</text>
+    <text x="90" y="110" text-anchor="middle" font-size="20">🎙</text>
+    <text x="90" y="132" text-anchor="middle" font-size="10" fill="#cfe0ff">Customer speaks</text>
+    <text x="90" y="148" text-anchor="middle" font-size="9" fill="#8fa2c2">"Fill it for me:</text>
+    <text x="90" y="160" text-anchor="middle" font-size="9" fill="#8fa2c2">Jane, basic plan"</text>
+
+    <!-- 2 -->
+    <rect x="162" y="66" width="120" height="130" rx="10" fill="#1c2333" stroke="#31405c"/>
+    <circle cx="182" cy="86" r="11" fill="#4da3ff"/><text x="182" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">2</text>
+    <text x="222" y="110" text-anchor="middle" font-size="20">🧠</text>
+    <text x="222" y="132" text-anchor="middle" font-size="10" fill="#cfe0ff">LLM calls the tool</text>
+    <text x="222" y="152" text-anchor="middle" font-size="9" fill="#8fa2c2" font-family="monospace">start_secure_</text>
+    <text x="222" y="164" text-anchor="middle" font-size="9" fill="#8fa2c2" font-family="monospace">session()</text>
+
+    <!-- 3 -->
+    <rect x="294" y="66" width="120" height="130" rx="10" fill="#1c2333" stroke="#31405c"/>
+    <circle cx="314" cy="86" r="11" fill="#f59e0b"/><text x="314" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">3</text>
+    <text x="354" y="110" text-anchor="middle" font-size="20">⚡</text>
+    <text x="354" y="132" text-anchor="middle" font-size="10" fill="#cfe0ff">Control frame</text>
+    <text x="354" y="152" text-anchor="middle" font-size="9" fill="#8fa2c2" font-family="monospace">{"type":</text>
+    <text x="354" y="164" text-anchor="middle" font-size="9" fill="#8fa2c2" font-family="monospace">"start_session"}</text>
+
+    <!-- 4 -->
+    <rect x="426" y="66" width="120" height="130" rx="10" fill="#1c2333" stroke="#31405c"/>
+    <circle cx="446" cy="86" r="11" fill="#f59e0b"/><text x="446" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">4</text>
+    <text x="486" y="110" text-anchor="middle" font-size="20">🔒</text>
+    <text x="486" y="132" text-anchor="middle" font-size="10" fill="#cfe0ff">Session embeds</text>
+    <text x="486" y="150" text-anchor="middle" font-size="9" fill="#8fa2c2">session.start("#frame")</text>
+    <text x="486" y="164" text-anchor="middle" font-size="9" fill="#8fa2c2">+ customer clicks Accept</text>
+
+    <!-- 5 -->
+    <rect x="558" y="66" width="120" height="130" rx="10" fill="#1c2333" stroke="#31405c"/>
+    <circle cx="578" cy="86" r="11" fill="#16a34a"/><text x="578" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">5</text>
+    <text x="618" y="110" text-anchor="middle" font-size="20">🤝</text>
+    <text x="618" y="132" text-anchor="middle" font-size="10" fill="#cfe0ff">The bind</text>
+    <text x="618" y="152" text-anchor="middle" font-size="9" fill="#8fa2c2" font-family="monospace">{"type":"bind",</text>
+    <text x="618" y="164" text-anchor="middle" font-size="9" fill="#8fa2c2" font-family="monospace">"session_id":…}</text>
+
+    <!-- 6 -->
+    <rect x="690" y="66" width="120" height="130" rx="10" fill="#1c2333" stroke="#31405c"/>
+    <circle cx="710" cy="86" r="11" fill="#16a34a"/><text x="710" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">6</text>
+    <text x="750" y="110" text-anchor="middle" font-size="20">🖱</text>
+    <text x="750" y="132" text-anchor="middle" font-size="10" fill="#cfe0ff">Agent acts</text>
+    <text x="750" y="152" text-anchor="middle" font-size="9" fill="#8fa2c2" font-family="monospace">see_domSnapshot</text>
+    <text x="750" y="164" text-anchor="middle" font-size="9" fill="#8fa2c2" font-family="monospace">act_batch (fill + submit)</text>
+
+    <!-- 7 -->
+    <rect x="822" y="66" width="76" height="130" rx="10" fill="#122b1e" stroke="#1d4d33"/>
+    <circle cx="842" cy="86" r="11" fill="#28c840"/><text x="842" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#0f1626">7</text>
+    <text x="860" y="112" text-anchor="middle" font-size="18">✓</text>
+    <text x="860" y="132" text-anchor="middle" font-size="10" fill="#cfe0ff">Done</text>
+    <text x="860" y="150" text-anchor="middle" font-size="9" fill="#8fa2c2">narrated</text>
+    <text x="860" y="162" text-anchor="middle" font-size="9" fill="#8fa2c2">end to end</text>
+  </g>
+
+  <!-- connectors -->
+  <g stroke="#31405c" stroke-width="2">
+    <line x1="150" y1="131" x2="162" y2="131"/><line x1="282" y1="131" x2="294" y2="131"/>
+    <line x1="414" y1="131" x2="426" y2="131"/><line x1="546" y1="131" x2="558" y2="131"/>
+    <line x1="678" y1="131" x2="690" y2="131"/><line x1="810" y1="131" x2="822" y2="131"/>
+  </g>
+
+  <!-- voice continuity strip -->
+  <rect x="30" y="220" width="868" height="60" rx="10" fill="#141c30" stroke="#31405c"/>
+  <text x="50" y="245" font-size="11" fill="#9fd0ff" font-weight="700">VOICE CONTINUITY — the mic connection is never touched</text>
+  <text x="50" y="264" font-size="11" fill="#8fa2c2">steps 1–2 live on the voice wire · step 3 is one JSON frame on the same wire · step 4 is pure DOM (an iframe appears) · steps 5–6 ride the voice wire + the tools wire</text>
+  <text x="50" y="284" font-size="11" fill="#8fa2c2">no navigation · no reload · no reconnect — that is what makes the handoff feel seamless</text>
+</svg>

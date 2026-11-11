@@ -1,0 +1,36 @@
+<svg viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Voice agent flow: you talk, a secure overlay opens, the form fills itself">
+  <rect width="800" height="300" fill="#0f1626"/>
+  <rect x="60" y="40" width="200" height="150" rx="10" fill="#1c2333" stroke="#31405c"/>
+  <rect x="60" y="40" width="200" height="26" rx="10" fill="#31405c"/>
+  <circle cx="75" cy="53" r="4" fill="#ff5f57"/><circle cx="89" cy="53" r="4" fill="#febc2e"/><circle cx="103" cy="53" r="4" fill="#28c840"/>
+  <text x="160" y="100" text-anchor="middle" font-size="34">🎙</text>
+  <rect x="90" y="118" width="140" height="10" rx="5" fill="#4da3ff" opacity=".9"/>
+  <rect x="90" y="136" width="100" height="10" rx="5" fill="#4da3ff" opacity=".55"/>
+  <rect x="90" y="154" width="120" height="10" rx="5" fill="#4da3ff" opacity=".3"/>
+  <text x="160" y="185" text-anchor="middle" font-size="12" fill="#8fa2c2">"Fill this for me — Jane, jane@acme.com, basic"</text>
+  <text x="290" y="120" font-size="22" fill="#4da3ff">→</text>
+  <text x="285" y="145" font-size="11" fill="#8fa2c2" font-family="monospace">start_secure_session</text>
+  <rect x="330" y="40" width="200" height="150" rx="10" fill="#1c2333" stroke="#31405c"/>
+  <rect x="330" y="40" width="200" height="26" rx="10" fill="#31405c"/>
+  <text x="430" y="58" text-anchor="middle" font-size="11" fill="#cfe0ff">🔒 Secure session overlay</text>
+  <rect x="345" y="80" width="170" height="14" rx="4" fill="#24406e"/>
+  <rect x="345" y="102" width="170" height="14" rx="4" fill="#24406e"/>
+  <rect x="345" y="124" width="170" height="14" rx="4" fill="#24406e"/>
+  <rect x="345" y="80" width="96" height="14" rx="4" fill="#4da3ff"/>
+  <rect x="345" y="102" width="120" height="14" rx="4" fill="#4da3ff"/>
+  <rect x="352" y="124" width="60" height="14" rx="7" fill="#f59e0b"/>
+  <rect x="425" y="124" width="46" height="14" rx="7" fill="#4da3ff"/>
+  <rect x="482" y="124" width="24" height="14" rx="7" fill="#16a34a"/>
+  <text x="430" y="185" text-anchor="middle" font-size="12" fill="#8fa2c2">same page, same tab — your mic stays on</text>
+  <text x="552" y="120" font-size="22" fill="#16a34a">✓</text>
+  <rect x="580" y="40" width="160" height="150" rx="10" fill="#1c2333" stroke="#31405c"/>
+  <rect x="580" y="40" width="160" height="26" rx="10" fill="#31405c"/>
+  <text x="660" y="58" text-anchor="middle" font-size="11" fill="#cfe0ff">Quote ready</text>
+  <rect x="600" y="85" width="120" height="34" rx="8" fill="#16a34a" opacity=".18"/>
+  <text x="660" y="107" text-anchor="middle" font-size="13" fill="#28c840">✓ Submitted</text>
+  <text x="660" y="150" text-anchor="middle" font-size="22">🤝</text>
+  <text x="660" y="185" text-anchor="middle" font-size="12" fill="#8fa2c2">filled for you, while you watched</text>
+  <text x="400" y="250" text-anchor="middle" font-size="15" fill="#e8eefb" font-weight="600">Pipecat voice agent + Webfuse co-browsing — on your own website</text>
+  <text x="400" y="272" text-anchor="middle" font-size="12" fill="#8fa2c2">one &lt;script&gt; tag · raw PCM websocket · agent acts in a secure overlay of THIS page</text>
+</svg>
