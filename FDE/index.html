@@ -64,535 +64,154 @@
 </header>
 <main>
   <article>
-    <h1 id="webfuse-pipecat-voice-agent-the-complete-guide">Webfuse × Pipecat Voice Agent — The Complete Guide</h1>
-<p>This guide explains everything in this project: what it does, how every
-piece works, how to run and deploy it, the bugs we hit while building it,
-and how to troubleshoot it.</p>
-<hr />
-<h2 id="1-what-this-is">1. What this is</h2>
-<p>A customer's <strong>own website</strong> with a voice agent embedded as a few lines
-of JavaScript. The visitor talks to the agent; when the agent needs to
-act (fill a form, click something), it opens a <strong>secure co-browsing
-session that shows the same page the customer is on</strong>, embedded as an
-overlay — and does the work on their behalf while they watch <strong>and keep
-talking</strong>. The voice connection never drops.</p>
-<p><img alt="The flow at a glance: you talk, a secure overlay opens on the same page, the form fills itself" src="assets/how-it-works.svg" /></p>
-<p>Try it live at <strong>https://webfuse-pipecat.netlify.app</strong>
-(primary; also mirrored at
-https://vipin-surfly.github.io/webfuse-pipecat-demo-site/ —
-the Acme Insurance quote page, with a how-it-works strip up top):</p>
-<ol>
-<li>Tap the 🎙 mic (bottom right), allow the microphone — greet the agent.</li>
-<li>Say <strong>"Fill the form for me — Vipin, vipin@acme.com, basic plan."</strong></li>
-<li>A <strong>"Start session" dialog</strong> pops up — click <strong>Accept</strong> (one click;
-   it is both consent and the browser gesture the session needs).</li>
-<li>The Webfuse session appears as a <strong>full-page overlay on the same
-   page</strong> — the URL bar never changes, your mic stays green — and the
-   agent reads the form, fills name / email / plan, submits it, and
-   narrates each step while you keep talking.</li>
-</ol>
-<p>The key property of this demo: the session is the <strong>same page, same
-URL</strong>, embedded in an <code>&lt;iframe&gt;</code> the site owns — the "agent acts on MY
-page while I watch" story, not a browser somewhere else that the agent
-drives.</p>
-<p>The page opens with a <strong>how-it-works strip</strong> (a dark SVG "screenshot"
-of the whole flow: you talking → the secure overlay filling the form →
-quote ready) so anyone landing on the demo understands it in one
-glance. The Space also runs a second, <strong>outbound</strong> mode — open a
-session link directly and get the voice agent <em>inside</em> the session
-(§4.4).</p>
-<hr />
-<h2 id="2-the-moving-parts">2. The moving parts</h2>
-<p><img alt="Architecture: the customer's browser, the voice websocket through the tunnel, the Pipecat bot, OpenAI Realtime, and the Webfuse Session MCP driving the embedded session" src="assets/architecture.svg" /></p>
-<pre><code>   Visitor's browser — https://vipin-surfly.github.io/webfuse-pipecat-demo-site/
-   ├── index.html   Acme form + Webfuse widget snippet + session iframe
-   │                (initSpace → window.__wfSpace; #agent-session-frame)
-   ├── agent.js     voice widget: mic button, Mute pill, status line,
-   │                PCM capture/playback, session handoff + bind logic
-   ├── pcm-worklet.js  AudioWorklets: capture mic / play agent audio
-   │
-   │  binary PCM 16 kHz (both ways) + JSON control frames
-   ▼  over wss://&lt;ngrok tunnel&gt;
-   bot.py (local machine)
-   ├── WS voice server  localhost:8765 (SingleClientWebsocketServerTransport)
-   ├── HTTP test page   localhost:8766 (client/index.html)
-   ├── OpenAI Realtime  gpt-realtime-2.1, reasoning &quot;minimal&quot;,
-   │                   semantic turn detection, transcription
-   ├── start_secure_session  the handoff tool → {&quot;type&quot;:&quot;start_session&quot;}
-   │                               │
-   │  {&quot;type&quot;:&quot;bind&quot;,&quot;session_id&quot;:…} from the page (which session to drive)
-   ▼                               ▼
-   Webfuse Session MCP (ak_ key)  https://session-mcp.webfu.se/mcp
-   ├── navigate / pageInfo / see_domSnapshot / act_click / act_type …
-   └── drives the session the page started → the cloud browser that
-       proxies and overlays THE SAME site
+    <h1>Webfuse × Pipecat — a voice agent with eyes and hands</h1>
+<p>This demo shows how powerful Webfuse is for AI agents: a <strong>Webfuse Space
+with the Pipecat voice-agent extension</strong> turns a plain voice bot into an
+agent that can <strong>see the page and act on it</strong> — the customer just talks.</p>
+<p><img alt="The flow: open the session link, the Voice Agent mic appears in the top bar, talk — the agent sees and fills the page for you" src="assets/outbound-flow.svg" /></p>
+<h2>What you get</h2>
+<p>A Webfuse Space (<code>pipecat-poc</code>) with the <strong>Voice Agent extension</strong>
+installed. Open a session link — the session opens with the demo site
+(Acme Insurance) — and a <strong>🎙 mic button appears in the session's top
+bar</strong>. Click it, allow the microphone, and talk:</p>
+<blockquote>
+<p>"Fill the quote form for me — Jane, jane@acme.com, basic plan."</p>
+</blockquote>
+<p>The Pipecat agent listens, <strong>sees the page through the session</strong>, and
+<strong>acts on it through the session</strong> — it reads the form, types the name
+and email, picks the plan, clicks submit — narrating each step out loud
+while it works. Your voice connection and the agent's actions run at
+the same time, in the same session you are watching.</p>
+<p>That is the whole point: <strong>Webfuse hands the agent its eyes (page
+snapshots) and its hands (click / type / select)</strong> — the Pipecat agent
+supplies the ears and the voice.</p>
+<h2>How it works</h2>
+<p><img alt="Architecture: the session in the browser talks over a websocket to the Pipecat bot, which sees and acts through the Webfuse Session MCP" src="assets/architecture.svg" /></p>
+<pre><code> Customer            Webfuse Space            Pipecat bot
+ (browser)           (cloud browser)          (bot.py, local or hosted)
+ ─────────            ─────────────            ─────────────────────────
+ 🎙 mic ────────────► PCM over websocket ────► OpenAI Realtime
+                       (16 kHz audio, both ways)
+                     session shows the site      LLM decides what to do
+                                                  │
+                       eyes + hands ◄─────────────┘
+                       Webfuse Session MCP
+                       (see_domSnapshot, act_type, act_click …)
 </code></pre>
+<p>Three pieces, one wire each:</p>
 <table>
 <thead>
 <tr>
 <th>Piece</th>
-<th>Lives</th>
-<th>What it does</th>
+<th>What it is</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>demo-site/</code></td>
-<td>GitHub Pages (<code>webfuse-pipecat-demo-site</code>)</td>
-<td>The customer site: form, widget snippet, session iframe, voice widget (<code>agent.js</code>), worklets</td>
+<td><strong>The session</strong></td>
+<td>A Webfuse cloud browser (the Space's start page) — what the customer sees and what the agent drives</td>
 </tr>
 <tr>
-<td><code>bot.py</code></td>
-<td>your machine</td>
-<td>The whole agent: PCM WebSocket transport, OpenAI Realtime voice+brain, the handoff tool, the 14 Webfuse session tools</td>
+<td><strong>The extension</strong></td>
+<td>The 🎙 button in the session top bar. Its popup opens a websocket to the bot and reports the session id — so the agent's tools point at <em>this</em> session</td>
 </tr>
 <tr>
-<td><code>client/index.html</code></td>
-<td>served by bot on :8766</td>
-<td>Local test page (voice only) for debugging without GitHub Pages</td>
-</tr>
-<tr>
-<td><code>extension/</code></td>
-<td>GitHub <code>webfuse-pipecat-extension</code>, installed on the Space (ref <code>main</code>)</td>
-<td>The <strong>Voice Agent</strong> mic in the session top bar: the outbound flow's voice entry point — popup connects to the bot, reads its session id, sends the bind</td>
-</tr>
-<tr>
-<td>ngrok</td>
-<td>your machine, <code>http 8765</code></td>
-<td>Puts the WS on <code>wss://….ngrok-free.app</code>; the URL is baked into <code>agent.js</code> (rotates per restart — see §6)</td>
-</tr>
-<tr>
-<td>Webfuse</td>
-<td>Space <code>pipecat-poc</code> (id <strong>3879</strong>, host <code>webfu.se</code>)</td>
-<td>Sessions, widget key, Session MCP</td>
-</tr>
-<tr>
-<td>OpenAI</td>
-<td>cloud</td>
-<td><code>gpt-realtime-2.1</code> — ears, brain and voice in one realtime session</td>
+<td><strong>The bot</strong></td>
+<td>A Pipecat pipeline: OpenAI Realtime (<code>gpt-realtime-2.1</code>) for ears/brain/voice, plus the 14 Webfuse session tools for eyes and hands</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Only the bot runs on your machine</strong> (plus the tunnel). The site is
-static, the sessions are in Webfuse's cloud, the model is OpenAI's.</p>
-<hr />
-<h2 id="3-key-concepts">3. Key concepts</h2>
-<h3 id="31-pipecat-the-wire-protocol">3.1 Pipecat + the wire protocol</h3>
-<ul>
-<li><strong>Pipeline</strong> — transport → (tools logger) → LLM, all frames. The
-  worker runs with <code>idle_timeout_secs=None</code>: the default 600 s idle
-  kill <strong>silently murdered the bot</strong> after ten quiet minutes (§7.6).</li>
-<li><strong>Raw PCM WebSocket, not WebRTC.</strong> <code>PCMFrameSerializer</code> speaks:</li>
-<li>binary frames = Int16 LE, 16 kHz, mono PCM — mic up, agent voice
-    down. No codecs, no SDP, nothing to negotiate; a plain <code>WebSocket</code>
-    in the browser and <code>AudioWorklet</code>s at each end.</li>
-<li>text frames = JSON control messages, both directions:<ul>
-<li>bot → page: <code>{"type":"start_session"}</code> (open the co-browse),
-  <code>{"type":"debug_send_start"}</code> (POC test hook — remove for
-  production).</li>
-<li>page → bot: <code>{"type":"bind","session_id":…}</code> (drive <em>this</em>
-  session).</li>
-</ul>
-</li>
-<li>Control handlers are wrapped in try/except — a control bug must
-    never kill the voice connection.</li>
-<li><strong>SingleClientWebsocketServerTransport</strong> — exactly one voice client
-  at a time. A second mic connection takes over.</li>
-<li><strong>OpenAI Realtime specifics we learned the hard way:</strong></li>
-<li><code>gpt-realtime-2.1</code> <strong>is a reasoning model</strong>: left on the server
-    default it thinks on every turn (measured 3–6 s). Set
-    <code>Reasoning(effort="minimal")</code> → measured TTFB <strong>0.255 s</strong>.</li>
-<li>A realtime session <strong>dies at 60 minutes</strong> (<code>session_expired</code>) —
-    the bot keeps running but the brain is gone; restart the bot for
-    long-running demos.</li>
-<li><code>SemanticTurnDetection</code> ends turns smartly but adds ~0.5–1.5 s of
-    "is the human really done?" — fine for this demo.</li>
-</ul>
-<h3 id="32-webfuse">3.2 Webfuse</h3>
-<ul>
-<li><strong>Space</strong> — <code>pipecat-poc</code>, numeric id <strong>3879</strong>, on <code>webfu.se</code>. All
-  keys and settings below belong to it.</li>
-<li><strong>Widget API</strong> (<code>surfly.js</code> from the snippet in <code>index.html</code>):</li>
-<li><code>webfuse.initSpace(wk, spaceId, settings)</code> → Promise → <strong>Space</strong>.
-    Only the <strong>Space</strong> has <code>.session()</code> and <code>.button()</code> — the global
-    <code>webfuse</code> object itself has nothing but <code>initSpace</code> (§7.3).</li>
-<li><code>space.session(settings)</code> → session object.
-    <strong><code>session.start("#selector")</code></strong> starts the session <strong>embedded in
-    the iframe matching that selector</strong>. This is the load-bearing API
-    of the whole demo (§4.2).</li>
-<li>Events: <code>session_started</code> (carry the session id), plus a global
-    <code>webfuse.on("session_started", …)</code> safety net.</li>
-<li><code>webfuse.isInsideSession</code> — true in the proxied copy of the page
-    <em>inside</em> a session; the voice widget refuses to run there (§7.8).</li>
-<li><strong>Keys:</strong> <code>wk_…</code> widget key (public, in the page), <code>ak_…</code> automation
-  key (Session MCP, in <code>.env</code> as <code>WEBFUSE_API_KEY</code>).</li>
-<li><strong>Session MCP</strong> — <code>https://session-mcp.webfu.se/mcp</code>, the agent's
-  hands and eyes: <code>navigate</code>, <code>pageInfo</code>, <code>see_domSnapshot</code>
-  (<code>interactiveOnly: true</code> for a compact list), and <code>act_click /
-  act_type / act_keyPress / act_select / act_batch …</code>. Actions take a
-  <strong><code>target</code></strong> (wf-id from the snapshot, a CSS selector, or <code>'[x,y]'</code>)
-  — not <code>selector</code>. The bot injects the bound <code>session_id</code> into every
-  call by mutating <code>mcp._tools_arguments</code> and hiding the parameter
-  from the LLM's view.</li>
-</ul>
-<hr />
-<h2 id="4-how-the-flows-work">4. How the flows work</h2>
-<h3 id="41-voice-connect">4.1 Voice connect</h3>
-<ol>
-<li>Page loads <code>agent.js</code> (guarded: it does nothing inside a Webfuse
-   session). Tap 🎙 → <code>getUserMedia</code> → two AudioWorklets: <code>pcm-sender</code>
-   (mic → WS) and <code>pcm-receiver</code> (WS → speaker), one 16 kHz
-   AudioContext.</li>
-<li><code>wss://&lt;tunnel&gt;</code> connects to the bot; the bot's <code>on_client_connected</code>
-   starts the conversation.</li>
-<li>The <strong>Mute pill</strong> next to the mic drops outbound audio only — the
-   connection stays open, the agent can keep acting on the page.</li>
-</ol>
-<h3 id="42-the-handoff-fill-the-form-for-me">4.2 The handoff ("fill the form for me")</h3>
-<p><img alt="The handoff sequence: speak, tool call, control frame, session embeds, bind, agent acts, done — voice never drops" src="assets/handoff-sequence.svg" /></p>
-<ol>
-<li>The LLM calls the <code>start_secure_session</code> tool. The tool sends
-   <code>{"type":"start_session"}</code> down the voice WS <strong>first</strong>, then returns
-   a result telling the agent to have the customer click Accept.</li>
-<li>The page's <code>enterSession()</code>:
-   <code>space.session().start("#agent-session-frame")</code> — embedding the
-   session in the site's own full-screen iframe.
-   - <strong>Why this exact API:</strong> with a CSS selector the widget <em>never</em>
-     navigates the page away and <em>never</em> opens a separate window, and
-     it also bypasses the "restored session" start refusal (§7.4).
-   - Browsers that block third-party cookies (Firefox defaults) can't
-     let the widget open its cookie-test popup without a gesture, so
-     the widget shows its own <strong>"Start session" dialog</strong>; the
-     customer's <strong>Accept click is the gesture</strong> and the consent. On
-     browsers with 3P cookies it embeds with no dialog at all.</li>
-<li><code>session_started</code> fires on the session object → the page shows the
-   iframe and sends <code>{"type":"bind","session_id":…}</code> up the voice WS.
-   The bot rebinds all 14 MCP tools to that session ("Bound to inbound
-   session" in the log).</li>
-<li>The agent <code>see_domSnapshot</code>s the form and <code>act_batch</code>es the fields
-   (name / email / plan / submit), narrating each step. Voice and
-   session run <strong>concurrently</strong> — that is the whole demo.</li>
-</ol>
-<h3 id="43-inside-the-session">4.3 Inside the session</h3>
-<p>The proxied copy of the page (under <code>github-io-p.webfu.se/…</code>) also
-loads <code>agent.js</code> — the guard (<code>webfuse.isInsideSession</code>, <code>__surfly</code>,
-<code>*.webfu.se</code> host) makes it return immediately: one voice widget, on
-the outer page, not two.</p>
-<h3 id="44-the-outbound-flow-session-first-no-site-widget-needed">4.4 The outbound flow (session-first, no site widget needed)</h3>
-<p><img alt="Outbound flow: open the session link, the Voice Agent extension gives the session a voice, talk and the agent drives the session you watch" src="assets/outbound-flow.svg" /></p>
-<p>The Space also works in the reverse direction: a customer with
-<strong>no voice widget on their site at all</strong> opens a session link
-directly and gets the voice agent <em>inside</em> the session, via the
-<strong>"Voice Agent" extension</strong> installed on the Space:</p>
-<ol>
-<li>Open <strong>https://webfu.se/+pipecat-poc/</strong> — a session starts and
-   boots the Space's start page (the Netlify demo site).</li>
-<li>Click <strong>🎙 Voice Agent</strong> in the session top bar — the extension
-   popup connects to the bot (the tunnel URL lives in the
-   extension's <code>BOT_WS_URL</code> env), reads its session id via
-   <code>browser.webfuseSession.getSessionInfo()</code>, and sends the same
-   <code>{"type":"bind","session_id":…}</code> message.</li>
-<li>Talk — ask for the quote — the agent's browser tools are already
-   pointed at <em>this</em> session, and it fills the form while narrating.</li>
-</ol>
-<p><strong>Extension maintenance:</strong> the extension is installed from
-<code>https://github.com/vipin-surfly/webfuse-pipecat-extension</code>
-(ref <code>main</code>). When the ngrok URL changes, update it in the repo,
-push, and re-install the extension on the Space
-(Studio → Space → Extensions, or the API). Extensions load on the
-<strong>next</strong> session start, not in sessions already running.</p>
-<hr />
-<h2 id="5-repository-layout">5. Repository layout</h2>
-<pre><code>webfuse-pipecat/
-├── bot.py               the entire agent (transport, serializer, LLM,
-│                        tools, handoff, logging)
-├── demo-site/           git repo → Netlify (primary) + GitHub Pages (mirror)
-│   ├── index.html       Acme form + how-it-works strip + widget snippet
-│   │                    + session iframe
-│   ├── agent.js         the voice widget
-│   ├── pcm-worklet.js   capture/playback worklets (shared with client/)
-│   └── FDE/index.html   this guide, rendered — served at /FDE
-├── client/              local test page served by bot.py on :8766
-├── extension/           git repo → the &quot;Voice Agent&quot; session extension
-│                        (outbound flow; installed from this repo)
-├── .env                 ALL credentials (never commit!)
-├── bot.log              runtime log (user:/agent:/tool call:/Bound …)
-├── README.md            quick start
-└── GUIDE.md             this file (source of the /FDE page)
-</code></pre>
-<h3 id="environment-variables-env">Environment variables (<code>.env</code>)</h3>
-<table>
-<thead>
-<tr>
-<th>Var</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>OPENAI_API_KEY</code></td>
-<td>OpenAI (gpt-realtime-2.1 realtime session)</td>
-</tr>
-<tr>
-<td><code>WEBFUSE_API_KEY</code></td>
-<td><code>ak_…</code> automation key → Session MCP</td>
-</tr>
-<tr>
-<td><code>WEBFUSE_MCP_URL</code></td>
-<td><code>https://session-mcp.webfu.se/mcp</code></td>
-</tr>
-<tr>
-<td><code>WEBFUSE_SPACE_ID</code></td>
-<td><code>3879</code> (REST paths, e.g. end-session)</td>
-</tr>
-<tr>
-<td><code>WEBFUSE_SPACE_LINK</code></td>
-<td><code>https://webfu.se/+pipecat-poc/</code></td>
-</tr>
-</tbody>
-</table>
-<p>The widget key <code>wk_…</code> and space id are public and live in
-<code>demo-site/index.html</code> (Studio → Space → Developers tab).</p>
-<hr />
-<h2 id="6-running-and-deploying">6. Running and deploying</h2>
-<h3 id="one-time-setup">One-time setup</h3>
+<p>The voice wire is deliberately dumb: raw <strong>PCM audio</strong> (16 kHz, mono)
+both ways, plus tiny <strong>JSON control frames</strong> — the popup sends
+<code>{"type":"bind","session_id":…}</code> so the bot knows which session to
+drive. No SDK on the page, no WebRTC, nothing to negotiate.</p>
+<h2>Setup</h2>
+<h3>1. Run the bot</h3>
 <pre><code class="language-bash">python3 -m venv .venv
 .venv/bin/pip install &quot;pipecat-ai[mcp]==1.15.0&quot; aiohttp python-dotenv
+# .env: OPENAI_API_KEY, WEBFUSE_API_KEY (ak_…), WEBFUSE_SPACE_ID
+setsid nohup .venv/bin/python bot.py &gt; bot.log 2&gt;&amp;1 &lt; /dev/null &amp;
 </code></pre>
-<h3 id="start-the-bot">Start the bot</h3>
-<pre><code class="language-bash">setsid nohup .venv/bin/python bot.py &gt; bot.log 2&gt;&amp;1 &lt; /dev/null &amp;
-sleep 5 &amp;&amp; grep &quot;websocket server on&quot; bot.log   # expect localhost:8765
-</code></pre>
-<h3 id="start-the-tunnel-the-fiddly-part">Start the tunnel (the fiddly part)</h3>
+<p>The voice websocket listens on <code>localhost:8765</code>.</p>
+<h3>2. Expose it over HTTPS</h3>
+<p>The session runs in Webfuse's cloud, so the bot needs a public
+websocket URL:</p>
 <pre><code class="language-bash">setsid nohup ngrok http 8765 --log stdout &gt; ngrok.log 2&gt;&amp;1 &lt; /dev/null &amp;
-sleep 5 &amp;&amp; curl -s http://127.0.0.1:4040/api/tunnels   # copy public_url
+curl -s http://127.0.0.1:4040/api/tunnels   # copy the wss:// URL
 </code></pre>
-<ul>
-<li>The tunnel must point at <strong>8765</strong> (voice WS). 8766 is the static
-  test page — a tunnel there connects and then answers every WebSocket
-  handshake with HTTP 200 (§7.7).</li>
-<li><strong>The URL rotates every time ngrok restarts.</strong> Bake the new one into
-  <code>demo-site/agent.js</code> (<code>BOT_WS</code>), bump the version in the script tag
-  (<code>?v=N</code>) <strong>and in the badge text</strong>, push both repos, <strong>re-install the
-  extension on the Space</strong> (§4.4 maintenance — the extension keeps its
-  own copy of the URL in <code>BOT_WS_URL</code>), and wait ~1–2 min for the
-  Pages build (<code>gh run list --repo
-  vipin-surfly/webfuse-pipecat-demo-site</code>).</li>
-<li>Verify the wire before blaming anything else:</li>
-</ul>
-<p><code>bash
-  .venv/bin/python - &lt;&lt;'EOF'
-  import asyncio, websockets
-  async def t(u, n):
-      async with await websockets.connect(u, open_timeout=10): print(n, "OK")
-  async def main():
-      await t("ws://127.0.0.1:8765", "local")
-      await t("wss://&lt;your-tunnel&gt;", "tunnel")
-  asyncio.run(main())
-  EOF</code></p>
-<h3 id="process-management-notes-learned-the-hard-way">Process-management notes (learned the hard way)</h3>
-<ul>
-<li><code>pgrep -f "python bot[.]py"</code> — the bracket trick stops the pattern
-  matching your own grep. Never <code>pkill -f "python bot.py"</code>: it kills
-  the agent's shell wrapper too and every command times out. Kill by
-  PID list instead.</li>
-<li>Same for ngrok: use <code>pgrep -x ngrok</code> and kill by PID, never a broad
-  <code>pkill -f</code> pattern.</li>
-<li>The tool wrapper shells time out on long <code>&amp;</code> jobs; a cosmetic
-  timeout on <code>setsid nohup … &amp;</code> is normal — verify with <code>pgrep</code>.</li>
-</ul>
-<h3 id="deploy-the-site">Deploy the site</h3>
-<pre><code class="language-bash">cd demo-site
-npx netlify deploy --prod --dir .    # → https://webfuse-pipecat.netlify.app
-git push                              # mirror stays on GitHub Pages
+<h3>3. Configure the extension</h3>
+<p>The extension's <code>BOT_WS_URL</code> env must be the bot's public URL. It lives
+in the extension repo (<code>extension/manifest.json</code>), installed on the
+Space from <code>github.com/vipin-surfly/webfuse-pipecat-extension</code>:</p>
+<pre><code class="language-bash"># when the tunnel URL changes: edit manifest.json, then
+git push                                    # extension repo
+# then in Webfuse Studio → Space → Extensions → update/reinstall it
 </code></pre>
-<ul>
-<li>New Netlify sites serve a <strong>401 "Login Redirect" to the public until
-  the site owner opens the site once in a logged-in browser</strong> — one
-  visit, then it's public.</li>
-<li>Netlify is the primary demo URL: no 10-minute HTML cache (the §7.1
-  cache ghosts) and a proper deploy history with a screenshot of every
-  deploy in the Netlify UI. The <strong>Space's start page</strong> (outbound
-  sessions, §4.4) points here too.</li>
-<li>The guide itself is served at <strong><code>/FDE</code></strong> — regenerate the page after
-  editing <code>GUIDE.md</code>:</li>
-</ul>
-<p><code>bash
-  .venv/bin/python - &lt;&lt;'EOF'
-  import markdown
-  body = markdown.markdown(open("GUIDE.md").read(),
-                          extensions=["tables","fenced_code","toc","sane_lists"])
-  tpl = open("demo-site/FDE/index.html").read()
-  s, e = tpl.find("&lt;article&gt;"), tpl.find("&lt;/article&gt;")
-  open("demo-site/FDE/index.html","w").write(tpl[:s]+"&lt;article&gt;\n    "+body+"\n  "+tpl[e:])
-  EOF</code>
-- GitHub Pages rebuilds ~1–2 min after <code>git push</code>
-  (<code>gh run list --repo vipin-surfly/webfuse-pipecat-demo-site</code>).</p>
-<h3 id="demo-run">Demo run</h3>
+<p>Extensions load on the <strong>next</strong> session start — start a fresh session
+after changing it.</p>
+<h3>4. Demo</h3>
 <ol>
-<li>Hard-load the site (any <code>?query</code> forces a fresh HTML): the badge
-   under the mic must show the <strong>current version</strong> — if it doesn't,
-   you are testing a cached script and every bug report is a lie (§7.1).</li>
-<li>🎙 → "Fill the form for me — Vipin, vipin@acme.com, basic plan."</li>
-<li>Accept the session dialog; watch the overlay fill the form while
-   the narration continues.</li>
+<li>Open <strong>https://webfu.se/+pipecat-poc/</strong> — the session starts with
+   the Acme demo site.</li>
+<li>Click <strong>🎙 Voice Agent</strong> in the top bar → allow the microphone.</li>
+<li>Talk: <em>"Fill the quote form for me — Jane, jane@acme.com, basic
+   plan."</em> Watch it read, fill, and submit — while it narrates.</li>
 </ol>
-<hr />
-<h2 id="7-bugs-we-hit-and-what-they-taught">7. Bugs we hit and what they taught</h2>
-<ol>
-<li><strong>Cache ghosts.</strong> GitHub Pages serves HTML with a 10-minute
-   max-age; every "still the same" test round was a cached old script.
-   Fixes: <code>?v=N</code> cache-busting on the script tag, a <strong>visible version
-   badge</strong> on the page, and opening the site with any <code>?query</code> to force
-   a fresh HTML fetch. The badge is now the first thing we check.</li>
-<li><strong>TDZ killed the mic.</strong> Calling <code>setStatus()</code> one line before its
-   <code>const</code> declaration threw at load — the whole widget died and the
-   mic did nothing. Symptom: no badge + dead button = an early-crashed
-   script, not a mic problem.</li>
-<li><strong><code>webfuse.session()</code> does not exist.</strong> Only the <strong>Space</strong> object
-   (<code>initSpace(...).then(space =&gt; …)</code>) has <code>.session()</code> / <code>.button()</code>.
-   Our call on the global silently fell into a "widget not loaded"
-   <strong>fallback that navigated the page to webfu.se</strong> — the mysterious
-   URL change that cost a whole day. Fix: <code>window.__wfSpace = space</code>
-   in the snippet, use <code>space.session()</code>.</li>
-<li><strong>Gesture-less session starts.</strong> Programmatic starts can't open the
-   popup the widget's third-party-cookie test needs; on Firefox it
-   silently falls back to <em>navigating the page away</em>, or (with
-   <code>embedded_sessions_only</code>) stops dead with only a console.error.
-   Also: <code>session_autorestore_enabled</code> + stale restore cookies make
-   the widget <strong>refuse</strong> new starts. Fix for all of it:
-   <code>session.start("#agent-session-frame")</code> — a selector embeds in-page
-   (no navigation/tab possible), bypasses the restore refusal, and on
-   gesture-less browsers routes through the widget's own Start-session
-   dialog (the customer's Accept is the gesture and the consent).</li>
-<li><strong>The loader-stub race.</strong> <code>webfuse.on("session_started", …)</code> at
-   page-parse time attaches to the async <strong>loader stub</strong>, not the real
-   API (which arrives later) — the bind never fired, the session
-   opened but "nothing happened". Fix: bind on the session object we
-   start, and register global handlers by polling until
-   <code>typeof webfuse.on === "function"</code>.</li>
-<li><strong>Silent killers in the bot.</strong> Two <code>urlparse(...).origin</code>
-   <code>AttributeError</code>s (there is no <code>.origin</code> on a ParseResult!) — one
-   crashed the connection on every bind message (the WS died 50 ms
-   after bind), one crashed the bot from a <code>finally</code> block. And
-   <code>PipelineWorker(idle_timeout_secs=600)</code> ends the worker after ten
-   idle minutes with nothing but a log line. Fixes: <code>scheme://netloc</code>,
-   guarded cleanup, <code>idle_timeout_secs=None</code>.</li>
-<li><strong>Tunnel on the wrong port.</strong> After a ngrok restart we re-created
-   it on 8766 (the static test page): the WS "connected" and then got
-   HTTP 200 to every upgrade. Symptom to remember: <code>server rejected
-   WebSocket connection: HTTP 200</code>.</li>
-<li><strong>Two voice widgets.</strong> The proxied page inside the session re-ran
-   our script — double mic, and AudioWorklet loads failing through the
-   proxy domain. Fix: the <code>isInsideSession</code> / <code>__surfly</code> / <code>webfu.se</code>
-   host guard; the widget only lives on the outer page.</li>
-<li><strong>60-minute brain.</strong> OpenAI Realtime sessions expire after 60 min —
-   the bot logs <code>session_expired</code> and goes quiet while everything
-   looks healthy. Restart the bot between long demos.</li>
-<li><strong>Reasoning latency.</strong> <code>gpt-realtime-2.1</code> reasons by default
-    (server-picked effort): measured 3–6 s per turn. One line —
-    <code>Reasoning(effort="minimal")</code> — brought TTFB to 0.255 s.</li>
-<li><strong>ngrok free jitter.</strong> ~150 ms RTT plus free-tier throttling on
-    streamed audio; every packet crosses the tunnel twice per turn.
-    Better: cloudflared quick tunnel or paid ngrok; best: host the bot
-    on a server instead of a dev machine.</li>
-</ol>
-<hr />
-<h2 id="8-troubleshooting">8. Troubleshooting</h2>
+<p>Anything you say next, it can do on the page: "change the plan to
+premium", "read me the confirmation", "start over".</p>
+<h2>Also: the same agent on your own website</h2>
+<p>The same bot also powers a <strong>site-embedded</strong> variant — a few lines of
+script in your own page (<code>demo-site/</code>): the customer talks to the agent
+from the site itself, and when it needs to act, a Webfuse session
+embeds <strong>as an overlay of that same page</strong> (<code>session.start("#frame")</code>),
+never navigating away. Same wire, same tools — the demo site at
+<strong>https://webfuse-pipecat.netlify.app</strong> runs this mode. See the code in
+<code>demo-site/agent.js</code> if you want that variant.</p>
+<h2>Troubleshooting</h2>
 <table>
 <thead>
 <tr>
 <th>Symptom</th>
-<th>Likely cause</th>
 <th>Fix</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Mic tap does nothing, no badge line</td>
-<td>cached/broken script (TDZ-style crash)</td>
-<td>hard reload with <code>?query</code>; check console first line + version badge</td>
+<td>🎙 clicked, silence</td>
+<td>Bot down: <code>pgrep -f "python bot[.]py"</code>, restart per Setup 1</td>
 </tr>
 <tr>
-<td><code>ws error</code> / <code>ws closed 1006</code></td>
-<td>bot down, tunnel down, or URL rotated</td>
-<td><code>pgrep -f "python bot[.]py"</code>; <code>pgrep -x ngrok</code>; re-bake the tunnel URL per §6</td>
+<td>Connect error in the popup</td>
+<td>Tunnel down or URL changed: restart ngrok, update <code>BOT_WS_URL</code> in the extension, reinstall, <strong>start a new session</strong></td>
 </tr>
 <tr>
-<td>Connects, then <code>HTTP 200</code> on the WS</td>
-<td>tunnel points at 8766 (static page)</td>
-<td>tunnel → 8765</td>
+<td>Agent hears but "can't see the page"</td>
+<td>Session not bound — reload the popup (click 🎙 again); check <code>bot.log</code> for <code>Bound to inbound session</code></td>
 </tr>
 <tr>
-<td>Session opens, agent "does nothing"</td>
-<td>bind never fired (stub race / old script)</td>
-<td>console must show <code>[agent] session_started: &lt;id&gt;</code>; script must be current version</td>
+<td>Agent goes quiet after ~60 min</td>
+<td>OpenAI Realtime session limit — restart the bot</td>
 </tr>
 <tr>
-<td>URL bar changes to webfu.se</td>
-<td>old script (pre-selector flow)</td>
-<td>must use <code>session.start("#agent-session-frame")</code>; hard reload</td>
+<td>Slow replies</td>
+<td><code>Reasoning(effort="minimal")</code> is already set; check tunnel latency, consider a paid tunnel or hosting the bot</td>
 </tr>
 <tr>
-<td>No session dialog, nothing happens</td>
-<td>stale restore cookie + autorestore, or silent embed failure</td>
-<td>don't enable <code>session_autorestore_enabled</code>; check console (<code>webfuse session error</code> now surfaces in the status line)</td>
-</tr>
-<tr>
-<td>Agent replies but form not filled</td>
-<td>session bound but details lost (bot restart wipes memory)</td>
-<td>say the details in one sentence</td>
-</tr>
-<tr>
-<td>Everything fine, then agent goes silent ~60 min in</td>
-<td>OpenAI realtime <code>session_expired</code></td>
-<td>restart the bot</td>
-</tr>
-<tr>
-<td>Very slow turns (3–6 s)</td>
-<td>reasoning effort, tunnel latency, semantic VAD</td>
-<td><code>Reasoning(effort="minimal")</code> is set; check tunnel RTT; see §7.10–7.11</td>
-</tr>
-<tr>
-<td>Bot died after ~10 idle minutes</td>
-<td>(historical) idle timeout</td>
-<td><code>idle_timeout_secs=None</code> is set — if it recurs, check the log for the worker end line</td>
-</tr>
-<tr>
-<td>Voice dies exactly when session starts</td>
-<td>(historical) navigation-mode flow</td>
-<td>the selector-embed flow never navigates; if seen, the page is running an old script</td>
-</tr>
-<tr>
-<td>Outbound session: Voice Agent button dead</td>
-<td>stale <code>BOT_WS_URL</code> in the Space's extension (tunnel rotated)</td>
-<td>push the new URL to the extension repo, re-install the extension on the Space (§4.4), start a NEW session</td>
-</tr>
-<tr>
-<td>Two "Voice Agent" buttons in the session top bar</td>
-<td>stale duplicate extension on the Space</td>
-<td>Studio → Space → Extensions → delete the old entry (keep the one with the current URL)</td>
+<td>Two 🎙 buttons in the top bar</td>
+<td>Stale duplicate extension on the Space — delete the old one in Studio → Extensions</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="9-where-to-go-next">9. Where to go next</h2>
+<h2>Notes</h2>
 <ul>
-<li><strong>Host the bot properly</strong> — a small VPS/container removes the ngrok
-  URL churn and the free-tier jitter (§7.11), and a stable tunnel domain
-  ends the re-bake-and-push dance per §6.</li>
-<li><strong>Session-end cleanup</strong> — when the session ends, the bot should
-  unbind and the page should hide the iframe; today that is manual.</li>
-<li><strong>Text chat fallback</strong> — a typed-input channel alongside the mic
-  would make the demo usable in noisy rooms (keep the Mute pill).</li>
-<li><strong>Secrets out of the page</strong> — the tunnel URL is public in
-  <code>agent.js</code>; fine for a POC, but a proxy endpoint with its own auth
-  is the production shape.</li>
-<li><strong>Multi-customer</strong> — <code>SingleClientWebsocketServerTransport</code> serves
-  one voice at a time; production needs a pool or a multi-tenant
-  transport.</li>
-<li><strong>Richer narration</strong> — narrate <code>act_batch</code> results step by step;
-  the ToolCallLogger already has everything needed on the bot side.</li>
+<li>The tunnel URL rotates on every ngrok restart — that's the one
+  manual step in this POC. Hosting the bot on any server with HTTPS
+  removes it entirely.</li>
+<li>The bot serves a local test page on <code>:8766</code> (<code>client/index.html</code>) for
+  voice-only debugging without a session.</li>
+<li>The 14 session tools come from Webfuse's Session MCP
+  (<code>session-mcp.webfu.se</code>) — the bot injects the bound session id into
+  every call, so the agent never deals with ids itself.</li>
 </ul>
   </article>
 </main>
