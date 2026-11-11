@@ -266,6 +266,28 @@ static, the sessions are in Webfuse's cloud, the model is OpenAI's.</p>
 loads <code>agent.js</code> — the guard (<code>webfuse.isInsideSession</code>, <code>__surfly</code>,
 <code>*.webfu.se</code> host) makes it return immediately: one voice widget, on
 the outer page, not two.</p>
+<h3 id="44-the-outbound-flow-session-first-no-site-widget-needed">4.4 The outbound flow (session-first, no site widget needed)</h3>
+<p>The Space also works like the LiveKit guide's: a customer with
+<strong>no voice widget on their site at all</strong> opens a session link
+directly and gets the voice agent <em>inside</em> the session, via the
+<strong>"Voice Agent" extension</strong> installed on the Space:</p>
+<ol>
+<li>Open <strong>https://webfu.se/+pipecat-poc/</strong> — a session starts and
+   boots the Space's start page (the Netlify demo site).</li>
+<li>Click <strong>🎙 Voice Agent</strong> in the session top bar — the extension
+   popup connects to the bot (the tunnel URL lives in the
+   extension's <code>BOT_WS_URL</code> env), reads its session id via
+   <code>browser.webfuseSession.getSessionInfo()</code>, and sends the same
+   <code>{"type":"bind","session_id":…}</code> message.</li>
+<li>Talk — ask for the quote — the agent's browser tools are already
+   pointed at <em>this</em> session, and it fills the form while narrating.</li>
+</ol>
+<p><strong>Extension maintenance:</strong> the extension is installed from
+<code>https://github.com/vipin-surfly/webfuse-pipecat-extension</code>
+(ref <code>main</code>). When the ngrok URL changes, update it in the repo,
+push, and re-install the extension on the Space
+(Studio → Space → Extensions, or the API). Extensions load on the
+<strong>next</strong> session start, not in sessions already running.</p>
 <hr />
 <h2 id="5-repository-layout">5. Repository layout</h2>
 <pre><code>webfuse-pipecat/
