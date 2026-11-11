@@ -86,17 +86,19 @@ the same time, in the same session you are watching.</p>
 snapshots) and its hands (click / type / select)</strong> — the Pipecat agent
 supplies the ears and the voice.</p>
 <h2>How it works</h2>
-<p><img alt="Architecture: the session in the browser talks over a websocket to the Pipecat bot, which sees and acts through the Webfuse Session MCP" src="assets/architecture.svg" /></p>
-<pre><code> Customer            Webfuse Space            Pipecat bot
- (browser)           (cloud browser)          (bot.py, local or hosted)
+<p><img alt="How it works: the customer opens a session link, the Webfuse session runs the site with the Voice Agent extension, the extension popup connects to the Pipecat bot, which hears and speaks via OpenAI Realtime and drives the session through the Webfuse Session MCP" src="assets/architecture.svg" /></p>
+<pre><code> Customer            Webfuse session          Pipecat bot
+ (browser)           (cloud browser)          (bot.py, hosted)
  ─────────            ─────────────            ─────────────────────────
- 🎙 mic ────────────► PCM over websocket ────► OpenAI Realtime
-                       (16 kHz audio, both ways)
-                     session shows the site      LLM decides what to do
+ link open ───────►   your site, proxied
+                      🎙 extension in top bar
+                      popup ──────────────────► PCM voice wire
+                                               (BOT_WS_URL, 16 kHz both ways)
+                                               OpenAI Realtime: ears/brain/voice
                                                   │
-                       eyes + hands ◄─────────────┘
-                       Webfuse Session MCP
-                       (see_domSnapshot, act_type, act_click …)
+                      eyes + hands ◄──────────────┘
+                      Webfuse Session MCP
+                      (see_domSnapshot, act_type, act_click …)
 </code></pre>
 <p>Three pieces, one wire each:</p>
 <table>
@@ -109,11 +111,11 @@ supplies the ears and the voice.</p>
 <tbody>
 <tr>
 <td><strong>The session</strong></td>
-<td>A Webfuse cloud browser (the Space's start page) — what the customer sees and what the agent drives</td>
+<td>A Webfuse cloud browser running your site — what the customer sees and what the agent drives</td>
 </tr>
 <tr>
 <td><strong>The extension</strong></td>
-<td>The 🎙 button in the session top bar. Its popup opens a websocket to the bot and reports the session id — so the agent's tools point at <em>this</em> session</td>
+<td>The 🎙 button in the session top bar. Its popup opens a websocket to the bot (<code>BOT_WS_URL</code>) and reports the session id — so the agent's tools point at <em>this</em> session</td>
 </tr>
 <tr>
 <td><strong>The bot</strong></td>
@@ -121,6 +123,9 @@ supplies the ears and the voice.</p>
 </tr>
 </tbody>
 </table>
+<p>Note what is <strong>not</strong> there: no code on your site at all — no snippet,
+no <code>initSpace</code>, nothing to deploy. The Space and the extension are the
+whole integration.</p>
 <p>The voice wire is deliberately dumb: raw <strong>PCM audio</strong> (16 kHz, mono)
 both ways, plus tiny <strong>JSON control frames</strong> — the popup sends
 <code>{"type":"bind","session_id":…}</code> so the bot knows which session to
@@ -204,7 +209,8 @@ script in your own page (<code>demo-site/</code>): the customer talks to the age
 from the site itself, and when it needs to act, a Webfuse session
 embeds <strong>as an overlay of that same page</strong> (<code>session.start("#frame")</code>),
 never navigating away. Same wire, same tools — the demo site at
-<strong>https://webfuse-pipecat.netlify.app</strong> runs this mode. See the code in
+<strong>https://vipin-surfly.github.io/webfuse-pipecat-demo-site/</strong> runs this
+mode. See the code in
 <code>demo-site/agent.js</code> if you want that variant.</p>
 <h2>Troubleshooting</h2>
 <table>
