@@ -91,6 +91,12 @@ the Acme Insurance quote page, with a how-it-works strip up top):</p>
 browser <em>with a tab</em> and the agent drives the web at large; here the
 session is the <strong>same page, same URL</strong>, embedded in an <code>&lt;iframe&gt;</code> the
 site owns — the "agent acts on MY page while I watch" story.</p>
+<p>The page opens with a <strong>how-it-works strip</strong> (a dark SVG "screenshot"
+of the whole flow: you talking → the secure overlay filling the form →
+quote ready) so anyone landing on the demo understands it in one
+glance. The Space also runs a second, <strong>outbound</strong> mode — open a
+session link directly and get the voice agent <em>inside</em> the session
+(§4.4).</p>
 <hr />
 <h2 id="2-the-moving-parts">2. The moving parts</h2>
 <pre><code>   Visitor's browser — https://vipin-surfly.github.io/webfuse-pipecat-demo-site/
@@ -142,8 +148,8 @@ site owns — the "agent acts on MY page while I watch" story.</p>
 </tr>
 <tr>
 <td><code>extension/</code></td>
-<td>GitHub <code>webfuse-pipecat-extension</code>, installed in the Space</td>
-<td>Fallback voice mic <strong>inside</strong> the session top bar for the old navigation-mode flow</td>
+<td>GitHub <code>webfuse-pipecat-extension</code>, installed on the Space (ref <code>main</code>)</td>
+<td>The <strong>Voice Agent</strong> mic in the session top bar: the outbound flow's voice entry point — popup connects to the bot, reads its session id, sends the bind</td>
 </tr>
 <tr>
 <td>ngrok</td>
@@ -293,17 +299,19 @@ push, and re-install the extension on the Space
 <pre><code>webfuse-pipecat/
 ├── bot.py               the entire agent (transport, serializer, LLM,
 │                        tools, handoff, logging)
-├── demo-site/           git repo → GitHub Pages (the &quot;customer site&quot;)
-│   ├── index.html       Acme form + widget snippet + session iframe
+├── demo-site/           git repo → Netlify (primary) + GitHub Pages (mirror)
+│   ├── index.html       Acme form + how-it-works strip + widget snippet
+│   │                    + session iframe
 │   ├── agent.js         the voice widget
-│   └── pcm-worklet.js   capture/playback worklets (shared with client/)
+│   ├── pcm-worklet.js   capture/playback worklets (shared with client/)
+│   └── FDE/index.html   this guide, rendered — served at /FDE
 ├── client/              local test page served by bot.py on :8766
-├── extension/           git repo → the &quot;Voice Agent&quot; browser extension
-│                        (fallback mic for the session top bar)
+├── extension/           git repo → the &quot;Voice Agent&quot; session extension
+│                        (outbound flow; installed from this repo)
 ├── .env                 ALL credentials (never commit!)
 ├── bot.log              runtime log (user:/agent:/tool call:/Bound …)
 ├── README.md            quick start
-└── GUIDE.md             this file
+└── GUIDE.md             this file (source of the /FDE page)
 </code></pre>
 <h3 id="environment-variables-env">Environment variables (<code>.env</code>)</h3>
 <table>
@@ -358,9 +366,10 @@ sleep 5 &amp;&amp; curl -s http://127.0.0.1:4040/api/tunnels   # copy public_url
   handshake with HTTP 200 (§7.7).</li>
 <li><strong>The URL rotates every time ngrok restarts.</strong> Bake the new one into
   <code>demo-site/agent.js</code> (<code>BOT_WS</code>), bump the version in the script tag
-  (<code>?v=N</code>) <strong>and in the badge text</strong>, and also update
-  <code>extension/manifest.json</code> + <code>extension/popup.js</code>. Then push both
-  repos and wait ~1–2 min for the Pages build (<code>gh run list --repo
+  (<code>?v=N</code>) <strong>and in the badge text</strong>, push both repos, <strong>re-install the
+  extension on the Space</strong> (§4.4 maintenance — the extension keeps its
+  own copy of the URL in <code>BOT_WS_URL</code>), and wait ~1–2 min for the
+  Pages build (<code>gh run list --repo
   vipin-surfly/webfuse-pipecat-demo-site</code>).</li>
 <li>Verify the wire before blaming anything else:</li>
 </ul>
@@ -396,10 +405,22 @@ git push                              # mirror stays on GitHub Pages
   visit, then it's public.</li>
 <li>Netlify is the primary demo URL: no 10-minute HTML cache (the §7.1
   cache ghosts) and a proper deploy history with a screenshot of every
-  deploy in the Netlify UI.</li>
-<li>GitHub Pages rebuilds ~1–2 min after <code>git push</code>
-  (<code>gh run list --repo vipin-surfly/webfuse-pipecat-demo-site</code>).</li>
+  deploy in the Netlify UI. The <strong>Space's start page</strong> (outbound
+  sessions, §4.4) points here too.</li>
+<li>The guide itself is served at <strong><code>/FDE</code></strong> — regenerate the page after
+  editing <code>GUIDE.md</code>:</li>
 </ul>
+<p><code>bash
+  .venv/bin/python - &lt;&lt;'EOF'
+  import markdown
+  body = markdown.markdown(open("GUIDE.md").read(),
+                          extensions=["tables","fenced_code","toc","sane_lists"])
+  tpl = open("demo-site/FDE/index.html").read()
+  s, e = tpl.find("&lt;article&gt;"), tpl.find("&lt;/article&gt;")
+  open("demo-site/FDE/index.html","w").write(tpl[:s]+"&lt;article&gt;\n    "+body+"\n  "+tpl[e:])
+  EOF</code>
+- GitHub Pages rebuilds ~1–2 min after <code>git push</code>
+  (<code>gh run list --repo vipin-surfly/webfuse-pipecat-demo-site</code>).</p>
 <h3 id="demo-run">Demo run</h3>
 <ol>
 <li>Hard-load the site (any <code>?query</code> forces a fresh HTML): the badge
@@ -534,6 +555,16 @@ git push                              # mirror stays on GitHub Pages
 <td>Voice dies exactly when session starts</td>
 <td>(historical) navigation-mode flow</td>
 <td>the selector-embed flow never navigates; if seen, the page is running an old script</td>
+</tr>
+<tr>
+<td>Outbound session: Voice Agent button dead</td>
+<td>stale <code>BOT_WS_URL</code> in the Space's extension (tunnel rotated)</td>
+<td>push the new URL to the extension repo, re-install the extension on the Space (§4.4), start a NEW session</td>
+</tr>
+<tr>
+<td>Two "Voice Agent" buttons in the session top bar</td>
+<td>stale duplicate extension on the Space</td>
+<td>Studio → Space → Extensions → delete the old entry (keep the one with the current URL)</td>
 </tr>
 </tbody>
 </table>
